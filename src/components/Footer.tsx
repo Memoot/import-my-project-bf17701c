@@ -1,7 +1,7 @@
 import { forwardRef } from "react";
 import { Link } from "react-router-dom";
 import { 
-  Mail, 
+  Rocket, 
   Twitter, 
   Instagram, 
   Linkedin, 
@@ -11,7 +11,8 @@ import {
   MapPin,
   Phone,
   Send,
-  Sparkles
+  Sparkles,
+  Mail
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +32,7 @@ const Footer = forwardRef<HTMLElement>((props, ref) => {
     company: {
       title: "الشركة",
       links: [
-        { name: "من نحن", href: "#" },
+        { name: "من نحن", href: "/about", isRoute: true },
         { name: "المدونة", href: "/blog", isRoute: true },
         { name: "الوظائف", href: "#" },
         { name: "الشركاء", href: "#" },
@@ -51,8 +52,8 @@ const Footer = forwardRef<HTMLElement>((props, ref) => {
     legal: {
       title: "قانوني",
       links: [
-        { name: "سياسة الخصوصية", href: "#" },
-        { name: "شروط الاستخدام", href: "#" },
+        { name: "سياسة الخصوصية", href: "/privacy", isRoute: true },
+        { name: "شروط الاستخدام", href: "/terms", isRoute: true },
         { name: "اتفاقية الخدمة", href: "#" },
         { name: "سياسة الإرجاع", href: "#" },
         { name: "GDPR", href: "#" },
@@ -74,15 +75,15 @@ const Footer = forwardRef<HTMLElement>((props, ref) => {
   return (
     <footer ref={ref} className="relative bg-foreground text-background overflow-hidden" {...props}>
       {/* Decorative Elements */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 left-0 w-80 h-80 bg-secondary/10 rounded-full blur-3xl" />
+      <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 left-0 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl" />
       
       {/* Newsletter Section */}
       <div className="relative border-b border-background/10">
         <div className="container mx-auto px-4 py-16">
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 bg-background/10 px-4 py-2 rounded-full mb-6">
-              <Sparkles className="w-4 h-4 text-secondary" />
+              <Sparkles className="w-4 h-4 text-emerald-400" />
               <span className="text-sm">اشترك في نشرتنا البريدية</span>
             </div>
             <h3 className="text-3xl md:text-4xl font-bold mb-4">
@@ -102,7 +103,7 @@ const Footer = forwardRef<HTMLElement>((props, ref) => {
               </div>
               <Button 
                 type="submit" 
-                className="h-12 px-8 bg-gradient-to-r from-secondary to-secondary/80 hover:from-secondary/90 hover:to-secondary/70 rounded-xl font-semibold"
+                className="h-12 px-8 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 rounded-xl font-semibold"
               >
                 <Send className="w-4 h-4 ml-2" />
                 اشترك الآن
@@ -119,9 +120,9 @@ const Footer = forwardRef<HTMLElement>((props, ref) => {
           <div className="col-span-2 md:col-span-3 lg:col-span-2">
             <Link to="/" className="flex items-center gap-3 mb-6 group">
               <div className="relative">
-                <div className="absolute inset-0 bg-secondary/30 rounded-xl blur-lg" />
-                <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-secondary to-secondary/80 flex items-center justify-center">
-                  <Mail className="w-6 h-6 text-secondary-foreground" />
+                <div className="absolute inset-0 bg-emerald-500/30 rounded-xl blur-lg" />
+                <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
+                  <Rocket className="w-6 h-6 text-white" />
                 </div>
               </div>
               <span className="text-2xl font-bold">ماركيتلي</span>
@@ -172,7 +173,7 @@ const Footer = forwardRef<HTMLElement>((props, ref) => {
             <div key={section.title}>
               <h4 className="font-bold text-lg mb-5 relative inline-block">
                 {section.title}
-                <span className="absolute -bottom-1 right-0 w-8 h-0.5 bg-gradient-to-l from-secondary to-transparent rounded-full" />
+                <span className="absolute -bottom-1 right-0 w-8 h-0.5 bg-gradient-to-l from-emerald-500 to-transparent rounded-full" />
               </h4>
               <ul className="space-y-3">
                 {section.links.map((link) => (

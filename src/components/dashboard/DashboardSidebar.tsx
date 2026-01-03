@@ -21,7 +21,8 @@ import {
   CreditCard,
   Key,
   Menu,
-  X
+  Rocket,
+  TrendingUp
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const menuItems = [
   { title: "نظرة عامة", url: "/dashboard", icon: LayoutDashboard },
@@ -54,7 +56,7 @@ const adminItems = [
   { title: "إدارة الاشتراكات", url: "/dashboard/admin/subscriptions", icon: CreditCard },
   { title: "مفاتيح API", url: "/dashboard/admin/api-keys", icon: Key },
   { title: "إدارة الإعلانات", url: "/dashboard/admin/ads", icon: Megaphone },
-  { title: "تقارير الإعلانات", url: "/dashboard/admin/ads-reports", icon: BarChart3 },
+  { title: "تقارير الإعلانات", url: "/dashboard/admin/ads-reports", icon: TrendingUp },
   { title: "إدارة القوالب", url: "/dashboard/admin/templates", icon: Upload },
   { title: "رفع قوالب جاهزة", url: "/dashboard/admin/upload-templates", icon: FileArchive },
 ];
@@ -79,62 +81,68 @@ function SidebarContent({
   return (
     <>
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {menuItems.map((item) => (
-          <NavLink
-            key={item.url}
-            to={item.url}
-            end={item.url === "/dashboard"}
-            onClick={onNavigate}
-            className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
-              collapsed && "justify-center px-2"
-            )}
-            activeClassName="bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary font-medium"
-          >
-            <item.icon className="w-5 h-5 flex-shrink-0" />
-            {!collapsed && <span>{item.title}</span>}
-          </NavLink>
-        ))}
+      <ScrollArea className="flex-1 py-4">
+        <nav className="px-3 space-y-1">
+          {menuItems.map((item) => (
+            <NavLink
+              key={item.url}
+              to={item.url}
+              end={item.url === "/dashboard"}
+              onClick={onNavigate}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-muted-foreground hover:bg-gradient-to-r hover:from-emerald-500/10 hover:to-teal-500/10 hover:text-foreground transition-all duration-200",
+                collapsed && "justify-center px-2"
+              )}
+              activeClassName="bg-gradient-to-r from-emerald-500/15 to-teal-500/15 text-emerald-600 dark:text-emerald-400 hover:from-emerald-500/20 hover:to-teal-500/20 font-medium border-r-2 border-emerald-500"
+            >
+              <item.icon className="w-5 h-5 flex-shrink-0" />
+              {!collapsed && <span>{item.title}</span>}
+            </NavLink>
+          ))}
 
-        {/* Admin Section */}
-        {userRole?.isAdmin && (
-          <>
-            <div className={cn("pt-4 pb-2", collapsed && "hidden")}>
-              <span className="text-xs font-medium text-muted-foreground px-3">الإدارة</span>
-            </div>
-            {adminItems.map((item) => (
-              <NavLink
-                key={item.url}
-                to={item.url}
-                onClick={onNavigate}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
-                  collapsed && "justify-center px-2"
-                )}
-                activeClassName="bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary font-medium"
-              >
-                <item.icon className="w-5 h-5 flex-shrink-0" />
-                {!collapsed && <span>{item.title}</span>}
-              </NavLink>
-            ))}
-          </>
-        )}
-      </nav>
+          {/* Admin Section */}
+          {userRole?.isAdmin && (
+            <>
+              <div className={cn("pt-6 pb-2", collapsed && "hidden")}>
+                <div className="flex items-center gap-2 px-3">
+                  <div className="h-px flex-1 bg-border" />
+                  <span className="text-xs font-medium text-muted-foreground">الإدارة</span>
+                  <div className="h-px flex-1 bg-border" />
+                </div>
+              </div>
+              {adminItems.map((item) => (
+                <NavLink
+                  key={item.url}
+                  to={item.url}
+                  onClick={onNavigate}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-xl text-muted-foreground hover:bg-gradient-to-r hover:from-amber-500/10 hover:to-orange-500/10 hover:text-foreground transition-all duration-200",
+                    collapsed && "justify-center px-2"
+                  )}
+                  activeClassName="bg-gradient-to-r from-amber-500/15 to-orange-500/15 text-amber-600 dark:text-amber-400 hover:from-amber-500/20 hover:to-orange-500/20 font-medium border-r-2 border-amber-500"
+                >
+                  <item.icon className="w-5 h-5 flex-shrink-0" />
+                  {!collapsed && <span>{item.title}</span>}
+                </NavLink>
+              ))}
+            </>
+          )}
+        </nav>
+      </ScrollArea>
 
       {/* User Section */}
-      <div className="p-4 border-t border-border">
+      <div className="p-4 border-t border-border bg-muted/30">
         <div className={cn(
           "flex items-center gap-3",
           collapsed && "justify-center"
         )}>
-          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-            <span className="text-sm font-medium text-foreground">{userInitials}</span>
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center flex-shrink-0 shadow-lg">
+            <span className="text-sm font-bold text-white">{userInitials}</span>
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">
-                {userRole?.isAdmin ? "مدير" : "مستخدم"}
+              <p className="text-sm font-semibold text-foreground truncate">
+                {userRole?.isAdmin ? "مدير النظام" : "مستخدم"}
               </p>
               <p className="text-xs text-muted-foreground truncate">{userEmail || "..."}</p>
             </div>
@@ -143,7 +151,7 @@ function SidebarContent({
             <Button 
               variant="ghost" 
               size="icon" 
-              className="flex-shrink-0 text-muted-foreground hover:text-destructive"
+              className="flex-shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl"
               onClick={handleLogout}
             >
               <LogOut className="w-4 h-4" />
@@ -189,25 +197,28 @@ export function DashboardSidebar() {
           <Button
             variant="outline"
             size="icon"
-            className="fixed top-4 right-4 z-50 lg:hidden bg-card shadow-lg"
+            className="fixed top-4 right-4 z-50 lg:hidden bg-card shadow-lg rounded-xl"
           >
             <Menu className="w-5 h-5" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="right" className="w-72 p-0 bg-card">
+        <SheetContent side="right" className="w-72 p-0 bg-card border-l-0">
           {/* Mobile Header */}
-          <div className="p-4 border-b border-border flex items-center justify-between">
+          <div className="p-4 border-b border-border bg-gradient-to-r from-emerald-500/10 to-teal-500/10">
             <button 
               onClick={() => { navigate("/"); setMobileOpen(false); }}
-              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
             >
-              <div className="w-10 h-10 rounded-xl bg-primary-gradient flex items-center justify-center">
-                <Mail className="w-5 h-5 text-primary-foreground" />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg">
+                <Rocket className="w-5 h-5 text-white" />
               </div>
-              <span className="font-bold text-lg text-foreground">ماركيتلي</span>
+              <div>
+                <span className="font-bold text-lg text-foreground block">ماركيتلي</span>
+                <span className="text-[10px] text-muted-foreground">منصة التسويق الذكية</span>
+              </div>
             </button>
           </div>
-          <div className="flex flex-col h-[calc(100%-73px)]">
+          <div className="flex flex-col h-[calc(100%-81px)]">
             <SidebarContent 
               collapsed={false} 
               userRole={userRole}
@@ -223,39 +234,41 @@ export function DashboardSidebar() {
       {/* Desktop Sidebar */}
       <aside 
         className={cn(
-          "bg-card border-l border-border h-screen sticky top-0 transition-all duration-300 flex-col hidden lg:flex",
-          collapsed ? "w-20" : "w-64"
+          "bg-card border-l border-border h-screen sticky top-0 transition-all duration-300 flex-col hidden lg:flex shadow-xl",
+          collapsed ? "w-20" : "w-72"
         )}
       >
-        {/* Logo - Clickable to go home */}
-        <div className="p-4 border-b border-border flex items-center justify-between">
-          {!collapsed && (
+        {/* Logo */}
+        <div className="p-4 border-b border-border bg-gradient-to-r from-emerald-500/5 to-teal-500/5">
+          {!collapsed ? (
             <button 
               onClick={() => navigate("/")}
-              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+              className="flex items-center gap-3 hover:opacity-80 transition-opacity w-full"
             >
-              <div className="w-10 h-10 rounded-xl bg-primary-gradient flex items-center justify-center">
-                <Mail className="w-5 h-5 text-primary-foreground" />
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg">
+                <Rocket className="w-5 h-5 text-white" />
               </div>
-              <span className="font-bold text-lg text-foreground">ماركيتلي</span>
+              <div className="text-right">
+                <span className="font-bold text-lg text-foreground block">ماركيتلي</span>
+                <span className="text-[10px] text-muted-foreground">منصة التسويق الذكية</span>
+              </div>
             </button>
-          )}
-          {collapsed && (
+          ) : (
             <button 
               onClick={() => navigate("/")}
-              className="w-10 h-10 rounded-xl bg-primary-gradient flex items-center justify-center mx-auto hover:opacity-80 transition-opacity"
+              className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center mx-auto hover:opacity-80 transition-opacity shadow-lg"
             >
-              <Mail className="w-5 h-5 text-primary-foreground" />
+              <Rocket className="w-5 h-5 text-white" />
             </button>
           )}
         </div>
 
         {/* Toggle Button */}
         <Button
-          variant="ghost"
+          variant="outline"
           size="icon"
           onClick={() => setCollapsed(!collapsed)}
-          className="absolute -left-3 top-6 w-6 h-6 rounded-full border border-border bg-card shadow-sm hover:bg-muted"
+          className="absolute -left-3 top-8 w-6 h-6 rounded-full border border-border bg-card shadow-md hover:bg-muted z-10"
         >
           {collapsed ? (
             <ChevronRight className="w-3 h-3" />
