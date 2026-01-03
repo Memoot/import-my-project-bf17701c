@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,6 +36,7 @@ const promptSuggestions = [
 ];
 
 export default function AIImageGeneratorPage() {
+  const navigate = useNavigate();
   const [prompt, setPrompt] = useState("");
   const [style, setStyle] = useState("professional");
   const [loading, setLoading] = useState(false);
@@ -48,6 +50,20 @@ export default function AIImageGeneratorPage() {
         description: "يرجى إدخال وصف للصورة",
         variant: "destructive",
       });
+      return;
+    }
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      toast({
+        title: "خطأ",
+        description: "يرجى تسجيل الدخول أولاً",
+        variant: "destructive",
+      });
+      navigate("/auth");
       return;
     }
 
