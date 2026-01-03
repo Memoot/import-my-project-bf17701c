@@ -33,12 +33,14 @@ import UploadTemplatesPage from "./pages/dashboard/UploadTemplatesPage";
 import AIImageGeneratorPage from "./pages/dashboard/AIImageGeneratorPage";
 import ProfilePage from "./pages/dashboard/ProfilePage";
 import UsersManagementPage from "./pages/dashboard/UsersManagementPage";
-import AdsManagementPage from "./pages/dashboard/AdsManagementPage";
-import AdsReportsPage from "./pages/dashboard/AdsReportsPage";
 import PlansManagementPage from "./pages/dashboard/PlansManagementPage";
 import SubscriptionsManagementPage from "./pages/dashboard/SubscriptionsManagementPage";
 import PricingPage from "./pages/dashboard/PricingPage";
 import ApiKeysManagementPage from "./pages/dashboard/ApiKeysManagementPage";
+import AdPackagesManagementPage from "./pages/dashboard/AdPackagesManagementPage";
+import AdRequestsManagementPage from "./pages/dashboard/AdRequestsManagementPage";
+import ArticlesManagementPage from "./pages/dashboard/ArticlesManagementPage";
+import MyAdRequestsPage from "./pages/dashboard/MyAdRequestsPage";
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminRoute } from "./components/AdminRoute";
@@ -80,13 +82,15 @@ const App = () => (
           <Route path="/dashboard/landing-pages/template-images" element={<ProtectedRoute><TemplateImagesPage /></ProtectedRoute>} />
           <Route path="/dashboard/ai-images" element={<ProtectedRoute><AIImageGeneratorPage /></ProtectedRoute>} />
           <Route path="/dashboard/pricing" element={<ProtectedRoute><PricingPage /></ProtectedRoute>} />
+          <Route path="/dashboard/my-ads" element={<ProtectedRoute><MyAdRequestsPage /></ProtectedRoute>} />
           {/* Admin Routes */}
           <Route path="/dashboard/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
           <Route path="/dashboard/admin/templates" element={<AdminRoute><AdminTemplatesPage /></AdminRoute>} />
           <Route path="/dashboard/admin/upload-templates" element={<AdminRoute><UploadTemplatesPage /></AdminRoute>} />
           <Route path="/dashboard/admin/users" element={<AdminRoute><UsersManagementPage /></AdminRoute>} />
-          <Route path="/dashboard/admin/ads" element={<AdminRoute><AdsManagementPage /></AdminRoute>} />
-          <Route path="/dashboard/admin/ads-reports" element={<AdminRoute><AdsReportsPage /></AdminRoute>} />
+          <Route path="/dashboard/admin/ad-packages" element={<AdminRoute><AdPackagesManagementPage /></AdminRoute>} />
+          <Route path="/dashboard/admin/ad-requests" element={<AdminRoute><AdRequestsManagementPage /></AdminRoute>} />
+          <Route path="/dashboard/admin/articles" element={<AdminRoute><ArticlesManagementPage /></AdminRoute>} />
           <Route path="/dashboard/admin/plans" element={<AdminRoute><PlansManagementPage /></AdminRoute>} />
           <Route path="/dashboard/admin/subscriptions" element={<AdminRoute><SubscriptionsManagementPage /></AdminRoute>} />
           <Route path="/dashboard/admin/api-keys" element={<AdminRoute><ApiKeysManagementPage /></AdminRoute>} />

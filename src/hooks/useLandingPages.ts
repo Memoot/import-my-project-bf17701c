@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 export interface LandingPageData {
@@ -15,17 +14,26 @@ export interface LandingPageData {
   updated_at: string;
 }
 
+const STORAGE_KEY = 'landing_pages';
+
+const getPagesFromStorage = (): LandingPageData[] => {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+};
+
+const savePagesToStorage = (pages: LandingPageData[]) => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(pages));
+};
+
 export function useLandingPages() {
   return useQuery({
     queryKey: ["landing-pages"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("landing_pages")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data as LandingPageData[];
+      return getPagesFromStorage();
     },
   });
 }
@@ -35,14 +43,8 @@ export function useLandingPage(id: string | undefined) {
     queryKey: ["landing-page", id],
     queryFn: async () => {
       if (!id) return null;
-      const { data, error } = await supabase
-        .from("landing_pages")
-        .select("*")
-        .eq("id", id)
-        .single();
-
-      if (error) throw error;
-      return data as LandingPageData;
+      const pages = getPagesFromStorage();
+      return pages.find(p => p.id === id) || null;
     },
     enabled: !!id,
   });
@@ -59,29 +61,29 @@ export function useCreateLandingPage() {
       settings: Record<string, any>;
       user_id: string;
     }) => {
-      const { data: result, error } = await supabase
-        .from("landing_pages")
-        .insert(data)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return result as LandingPageData;
+      const pages = getPagesFromStorage();
+      const newPage: LandingPageData = {
+        id: crypto.randomUUID(),
+        user_id: data.user_id,
+        name: data.name,
+        template_id: data.template_id || null,
+        pages: data.pages,
+        settings: data.settings,
+        is_published: false,
+        published_url: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      pages.unshift(newPage);
+      savePagesToStorage(pages);
+      return newPage;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["landing-pages"] });
-      toast({
-        title: "تم الإنشاء",
-        description: "تم إنشاء صفحة الهبوط بنجاح",
-      });
+      toast({ title: "تم الإنشاء", description: "تم إنشاء صفحة الهبوط بنجاح" });
     },
-    onError: (error) => {
-      toast({
-        title: "خطأ",
-        description: "فشل في إنشاء صفحة الهبوط",
-        variant: "destructive",
-      });
-      console.error(error);
+    onError: () => {
+      toast({ title: "خطأ", description: "فشل في إنشاء صفحة الهبوط", variant: "destructive" });
     },
   });
 }
@@ -90,35 +92,23 @@ export function useUpdateLandingPage() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      id,
-      ...data
-    }: Partial<LandingPageData> & { id: string }) => {
-      const { data: result, error } = await supabase
-        .from("landing_pages")
-        .update(data)
-        .eq("id", id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return result as LandingPageData;
+    mutationFn: async ({ id, ...data }: Partial<LandingPageData> & { id: string }) => {
+      const pages = getPagesFromStorage();
+      const index = pages.findIndex(p => p.id === id);
+      if (index !== -1) {
+        pages[index] = { ...pages[index], ...data, updated_at: new Date().toISOString() };
+        savePagesToStorage(pages);
+        return pages[index];
+      }
+      throw new Error("Page not found");
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["landing-pages"] });
       queryClient.invalidateQueries({ queryKey: ["landing-page", data.id] });
-      toast({
-        title: "تم الحفظ",
-        description: "تم حفظ التغييرات بنجاح",
-      });
+      toast({ title: "تم الحفظ", description: "تم حفظ التغييرات بنجاح" });
     },
-    onError: (error) => {
-      toast({
-        title: "خطأ",
-        description: "فشل في حفظ التغييرات",
-        variant: "destructive",
-      });
-      console.error(error);
+    onError: () => {
+      toast({ title: "خطأ", description: "فشل في حفظ التغييرات", variant: "destructive" });
     },
   });
 }
@@ -128,27 +118,15 @@ export function useDeleteLandingPage() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("landing_pages")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
+      const pages = getPagesFromStorage().filter(p => p.id !== id);
+      savePagesToStorage(pages);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["landing-pages"] });
-      toast({
-        title: "تم الحذف",
-        description: "تم حذف صفحة الهبوط بنجاح",
-      });
+      toast({ title: "تم الحذف", description: "تم حذف صفحة الهبوط بنجاح" });
     },
-    onError: (error) => {
-      toast({
-        title: "خطأ",
-        description: "فشل في حذف صفحة الهبوط",
-        variant: "destructive",
-      });
-      console.error(error);
+    onError: () => {
+      toast({ title: "خطأ", description: "فشل في حذف صفحة الهبوط", variant: "destructive" });
     },
   });
 }
@@ -158,46 +136,29 @@ export function useDuplicateLandingPage() {
 
   return useMutation({
     mutationFn: async ({ id, user_id }: { id: string; user_id: string }) => {
-      // First get the original
-      const { data: original, error: fetchError } = await supabase
-        .from("landing_pages")
-        .select("*")
-        .eq("id", id)
-        .single();
+      const pages = getPagesFromStorage();
+      const original = pages.find(p => p.id === id);
+      if (!original) throw new Error("Page not found");
 
-      if (fetchError) throw fetchError;
-
-      // Create a copy
-      const { data: result, error } = await supabase
-        .from("landing_pages")
-        .insert({
-          name: `${original.name} (نسخة)`,
-          template_id: original.template_id,
-          pages: original.pages,
-          settings: original.settings,
-          user_id: user_id,
-          is_published: false,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return result as LandingPageData;
+      const newPage: LandingPageData = {
+        ...original,
+        id: crypto.randomUUID(),
+        name: `${original.name} (نسخة)`,
+        user_id,
+        is_published: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      pages.unshift(newPage);
+      savePagesToStorage(pages);
+      return newPage;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["landing-pages"] });
-      toast({
-        title: "تم النسخ",
-        description: "تم نسخ صفحة الهبوط بنجاح",
-      });
+      toast({ title: "تم النسخ", description: "تم نسخ صفحة الهبوط بنجاح" });
     },
-    onError: (error) => {
-      toast({
-        title: "خطأ",
-        description: "فشل في نسخ صفحة الهبوط",
-        variant: "destructive",
-      });
-      console.error(error);
+    onError: () => {
+      toast({ title: "خطأ", description: "فشل في نسخ صفحة الهبوط", variant: "destructive" });
     },
   });
 }

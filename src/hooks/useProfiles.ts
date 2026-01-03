@@ -3,8 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface Profile {
   id: string;
+  user_id: string;
   email: string | null;
-  display_name: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -35,7 +37,6 @@ export function useSearchProfileByEmail(email: string) {
     queryFn: async () => {
       if (!email.trim()) return null;
       
-      // Sanitize input by escaping SQL wildcards
       const sanitizedEmail = escapeSqlWildcards(email.trim());
       
       const { data, error } = await supabase
