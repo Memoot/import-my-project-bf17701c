@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Play, Sparkles, Users, Mail, TrendingUp, Check, Star } from "lucide-react";
+import { ArrowLeft, Play, Sparkles, Users, Mail, TrendingUp, Check, Star, Rocket } from "lucide-react";
 import { Link } from "react-router-dom";
 import heroDashboard from "@/assets/hero-dashboard.png";
 
@@ -8,14 +8,14 @@ const HeroSection = () => {
     <section id="home" className="relative min-h-screen bg-hero-gradient overflow-hidden pt-20">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 right-1/4 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[100px] animate-pulse-slow" />
-        <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-secondary/20 rounded-full blur-[100px] animate-pulse-slow" style={{ animationDelay: "2s" }} />
-        <div className="absolute top-1/2 left-1/2 w-[300px] h-[300px] bg-accent/10 rounded-full blur-[80px] animate-pulse-slow" style={{ animationDelay: "4s" }} />
+        <div className="absolute top-1/4 right-1/4 w-[500px] h-[500px] bg-emerald-500/20 rounded-full blur-[100px] animate-pulse-slow" />
+        <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-teal-500/20 rounded-full blur-[100px] animate-pulse-slow" style={{ animationDelay: "2s" }} />
+        <div className="absolute top-1/2 left-1/2 w-[300px] h-[300px] bg-cyan-500/10 rounded-full blur-[80px] animate-pulse-slow" style={{ animationDelay: "4s" }} />
         
         {/* Floating Particles */}
-        <div className="absolute top-1/3 right-1/3 w-2 h-2 bg-secondary rounded-full animate-bounce-gentle" />
-        <div className="absolute top-2/3 left-1/4 w-3 h-3 bg-primary rounded-full animate-bounce-gentle" style={{ animationDelay: "1s" }} />
-        <div className="absolute bottom-1/3 right-1/4 w-2 h-2 bg-accent rounded-full animate-bounce-gentle" style={{ animationDelay: "0.5s" }} />
+        <div className="absolute top-1/3 right-1/3 w-2 h-2 bg-emerald-400 rounded-full animate-bounce-gentle" />
+        <div className="absolute top-2/3 left-1/4 w-3 h-3 bg-teal-400 rounded-full animate-bounce-gentle" style={{ animationDelay: "1s" }} />
+        <div className="absolute bottom-1/3 right-1/4 w-2 h-2 bg-cyan-400 rounded-full animate-bounce-gentle" style={{ animationDelay: "0.5s" }} />
       </div>
 
       {/* Grid Pattern */}
@@ -43,7 +43,7 @@ const HeroSection = () => {
 
             <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-primary-foreground mb-8 leading-[1.1] animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
               ارفع مبيعاتك مع
-              <span className="block mt-3 bg-gradient-to-r from-secondary via-yellow-400 to-secondary bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient-x">
+              <span className="block mt-3 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient-x">
                 حملات البريد الذكية
               </span>
             </h1>
@@ -57,8 +57,8 @@ const HeroSection = () => {
             <div className="flex flex-wrap justify-center lg:justify-start gap-4 mb-10 animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
               {["إنشاء بالذكاء الاصطناعي", "تحليلات متقدمة", "دعم عربي كامل"].map((feature) => (
                 <div key={feature} className="flex items-center gap-2 text-primary-foreground/80 text-sm">
-                  <div className="w-5 h-5 rounded-full bg-secondary/20 flex items-center justify-center">
-                    <Check className="w-3 h-3 text-secondary" />
+                  <div className="w-5 h-5 rounded-full bg-emerald-500/30 flex items-center justify-center">
+                    <Check className="w-3 h-3 text-emerald-400" />
                   </div>
                   {feature}
                 </div>
@@ -70,7 +70,7 @@ const HeroSection = () => {
               <Link to="/dashboard">
                 <Button 
                   size="xl" 
-                  className="group relative overflow-hidden bg-gradient-to-r from-secondary to-secondary/80 hover:from-secondary/90 hover:to-secondary/70 text-secondary-foreground font-bold shadow-xl hover:shadow-2xl transition-all duration-300 rounded-2xl px-8"
+                  className="group relative overflow-hidden bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold shadow-xl hover:shadow-2xl transition-all duration-300 rounded-2xl px-8"
                 >
                   <span className="relative z-10 flex items-center gap-2">
                     ابدأ تجربتك المجانية
@@ -97,8 +97,8 @@ const HeroSection = () => {
               ].map((stat) => (
                 <div key={stat.label} className="text-center lg:text-right group">
                   <div className="flex items-center justify-center lg:justify-start gap-2 mb-2">
-                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
-                      <stat.icon className="w-5 h-5 text-secondary" />
+                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                      <stat.icon className="w-5 h-5 text-emerald-400" />
                     </div>
                     <span className="text-2xl lg:text-3xl font-bold text-primary-foreground">{stat.value}</span>
                   </div>
@@ -112,7 +112,7 @@ const HeroSection = () => {
           <div className="flex-1 w-full max-w-xl lg:max-w-2xl animate-float">
             <div className="relative">
               {/* Glow Effect */}
-              <div className="absolute -inset-8 bg-gradient-to-r from-primary/40 via-secondary/30 to-primary/40 rounded-3xl blur-3xl animate-pulse-slow" />
+              <div className="absolute -inset-8 bg-gradient-to-r from-emerald-500/40 via-teal-500/30 to-cyan-500/40 rounded-3xl blur-3xl animate-pulse-slow" />
               
               {/* Main Dashboard */}
               <div className="relative bg-white/10 backdrop-blur-md rounded-3xl p-3 shadow-2xl border border-white/10">
@@ -126,7 +126,7 @@ const HeroSection = () => {
               {/* Floating Cards */}
               <div className="absolute -top-8 -right-8 bg-card p-4 rounded-2xl shadow-2xl animate-slide-in-right border border-border" style={{ animationDelay: "0.6s" }}>
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-500 rounded-xl flex items-center justify-center shadow-lg">
+                  <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-xl flex items-center justify-center shadow-lg">
                     <TrendingUp className="w-6 h-6 text-white" />
                   </div>
                   <div>
@@ -138,8 +138,8 @@ const HeroSection = () => {
 
               <div className="absolute -bottom-6 -left-6 bg-card p-4 rounded-2xl shadow-2xl animate-slide-in-left border border-border" style={{ animationDelay: "0.8s" }}>
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary-glow rounded-xl flex items-center justify-center shadow-lg">
-                    <Mail className="w-6 h-6 text-primary-foreground" />
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg">
+                    <Mail className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">رسائل اليوم</p>
@@ -149,7 +149,7 @@ const HeroSection = () => {
               </div>
 
               {/* Success Badge */}
-              <div className="absolute top-1/2 -left-4 bg-green-500 text-white px-4 py-2 rounded-full shadow-lg animate-bounce-gentle text-sm font-medium">
+              <div className="absolute top-1/2 -left-4 bg-emerald-500 text-white px-4 py-2 rounded-full shadow-lg animate-bounce-gentle text-sm font-medium">
                 ✓ تم الإرسال بنجاح
               </div>
             </div>

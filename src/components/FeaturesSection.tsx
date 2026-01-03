@@ -18,7 +18,7 @@ const features = [
     icon: Sparkles,
     title: "الذكاء الاصطناعي",
     description: "اكتب رسائل احترافية بضغطة زر واحدة باستخدام أحدث تقنيات الذكاء الاصطناعي",
-    color: "from-violet-500 to-purple-600",
+    color: "from-emerald-500 to-teal-500",
     delay: "0s",
   },
   {
@@ -32,7 +32,7 @@ const features = [
     icon: Users,
     title: "إدارة المشتركين",
     description: "نظّم قوائمك البريدية وقسّم جمهورك حسب الاهتمامات والسلوك",
-    color: "from-emerald-500 to-teal-500",
+    color: "from-violet-500 to-purple-500",
     delay: "0.2s",
   },
   {
@@ -60,14 +60,14 @@ const features = [
     icon: Globe,
     title: "دعم عربي كامل",
     description: "واجهة عربية بالكامل مع دعم RTL ولغة عربية طبيعية",
-    color: "from-indigo-500 to-blue-600",
+    color: "from-teal-500 to-cyan-500",
     delay: "0.6s",
   },
   {
     icon: Clock,
     title: "جدولة ذكية",
     description: "اختر أفضل أوقات الإرسال تلقائياً لزيادة معدلات الفتح",
-    color: "from-cyan-500 to-blue-500",
+    color: "from-indigo-500 to-blue-500",
     delay: "0.7s",
   },
   {
@@ -83,19 +83,19 @@ const FeaturesSection = () => {
   return (
     <section id="features" className="py-24 lg:py-32 bg-background relative overflow-hidden">
       {/* Background Decoration */}
-      <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-secondary/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+      <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-teal-500/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
 
       <div className="container mx-auto px-4 relative z-10">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-20">
-          <div className="inline-flex items-center gap-2 bg-primary/10 px-5 py-2.5 rounded-full mb-6 animate-fade-in-up">
-            <Sparkles className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium text-primary">المميزات</span>
+          <div className="inline-flex items-center gap-2 bg-emerald-500/10 px-5 py-2.5 rounded-full mb-6 animate-fade-in-up">
+            <Sparkles className="w-4 h-4 text-emerald-600" />
+            <span className="text-sm font-medium text-emerald-600">المميزات</span>
           </div>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-6 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
             كل ما تحتاجه في
-            <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent"> منصة واحدة</span>
+            <span className="bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent"> منصة واحدة</span>
           </h2>
           <p className="text-lg text-muted-foreground animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
             أدوات متكاملة لإدارة حملاتك البريدية من البداية للنهاية مع نتائج مضمونة
@@ -107,7 +107,7 @@ const FeaturesSection = () => {
           {features.map((feature, index) => (
             <div
               key={feature.title}
-              className="group relative bg-card rounded-3xl p-8 border border-border hover:border-primary/30 transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 animate-fade-in-up"
+              className="group relative bg-card rounded-3xl p-8 border border-border hover:border-emerald-500/30 transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 animate-fade-in-up"
               style={{ animationDelay: feature.delay }}
             >
               {/* Icon */}
@@ -116,7 +116,7 @@ const FeaturesSection = () => {
               </div>
 
               {/* Content */}
-              <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors">
+              <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-emerald-600 transition-colors">
                 {feature.title}
               </h3>
               <p className="text-muted-foreground leading-relaxed">
@@ -125,14 +125,14 @@ const FeaturesSection = () => {
 
               {/* Hover Arrow */}
               <div className="absolute bottom-8 left-8 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0">
-                <ArrowLeft className="w-5 h-5 text-primary" />
+                <ArrowLeft className="w-5 h-5 text-emerald-500" />
               </div>
 
               {/* Hover Glow Effect */}
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-emerald-500/5 to-teal-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
               
               {/* Corner Decoration */}
-              <div className="absolute top-0 left-0 w-20 h-20 bg-gradient-to-br from-primary/10 to-transparent rounded-tl-3xl rounded-br-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute top-0 left-0 w-20 h-20 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-tl-3xl rounded-br-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             </div>
           ))}
         </div>
@@ -142,7 +142,7 @@ const FeaturesSection = () => {
           <Link to="/dashboard">
             <Button 
               size="lg" 
-              className="bg-gradient-to-r from-primary to-primary-glow hover:from-primary/90 hover:to-primary-glow/90 text-primary-foreground font-semibold rounded-2xl px-8 shadow-lg hover:shadow-xl transition-all group"
+              className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold rounded-2xl px-8 shadow-lg hover:shadow-xl transition-all group"
             >
               اكتشف جميع المميزات
               <ArrowLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" />

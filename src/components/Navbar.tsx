@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Mail, ChevronDown, Sparkles } from "lucide-react";
+import { Menu, X, Sparkles, Rocket } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -39,14 +39,20 @@ const Navbar = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group">
             <div className="relative">
-              <div className="absolute inset-0 bg-primary/30 rounded-xl blur-lg group-hover:blur-xl transition-all duration-300 opacity-70" />
-              <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-primary via-primary to-secondary flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300">
-                <Mail className="w-6 h-6 text-primary-foreground" />
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/30 to-teal-500/30 rounded-xl blur-lg group-hover:blur-xl transition-all duration-300 opacity-70" />
+              <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300">
+                <Rocket className="w-6 h-6 text-white" />
               </div>
             </div>
             <div className="flex flex-col">
-              <span className="text-xl font-extrabold text-foreground tracking-tight">ماركيتلي</span>
-              <span className="text-[10px] text-muted-foreground font-medium -mt-1">منصة التسويق الذكية</span>
+              <span className={cn(
+                "text-xl font-extrabold tracking-tight transition-colors",
+                scrolled ? "text-foreground" : "text-white"
+              )}>ماركيتلي</span>
+              <span className={cn(
+                "text-[10px] font-medium -mt-1 transition-colors",
+                scrolled ? "text-muted-foreground" : "text-white/70"
+              )}>منصة التسويق الذكية</span>
             </div>
           </Link>
 
@@ -57,20 +63,25 @@ const Navbar = () => {
                 <Link
                   key={link.name}
                   to={link.href}
-                  className="relative px-4 py-2 text-muted-foreground hover:text-foreground transition-colors duration-200 font-medium text-sm group"
-                  style={{ animationDelay: `${index * 0.1}s` }}
+                  className={cn(
+                    "relative px-4 py-2 transition-colors duration-200 font-medium text-sm group",
+                    scrolled ? "text-muted-foreground hover:text-foreground" : "text-white/80 hover:text-white"
+                  )}
                 >
                   {link.name}
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-primary to-secondary rounded-full group-hover:w-3/4 transition-all duration-300" />
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full group-hover:w-3/4 transition-all duration-300" />
                 </Link>
               ) : (
                 <a
                   key={link.name}
                   href={link.href}
-                  className="relative px-4 py-2 text-muted-foreground hover:text-foreground transition-colors duration-200 font-medium text-sm group"
+                  className={cn(
+                    "relative px-4 py-2 transition-colors duration-200 font-medium text-sm group",
+                    scrolled ? "text-muted-foreground hover:text-foreground" : "text-white/80 hover:text-white"
+                  )}
                 >
                   {link.name}
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-primary to-secondary rounded-full group-hover:w-3/4 transition-all duration-300" />
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full group-hover:w-3/4 transition-all duration-300" />
                 </a>
               )
             ))}
@@ -79,41 +90,54 @@ const Navbar = () => {
           {/* CTA Buttons */}
           <div className="hidden lg:flex items-center gap-3">
             <Link to="/auth">
-              <Button variant="ghost" size="sm" className="font-medium">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={cn(
+                  "font-medium transition-colors",
+                  scrolled ? "" : "text-white hover:text-white hover:bg-white/10"
+                )}
+              >
                 تسجيل الدخول
               </Button>
             </Link>
             <Link to="/dashboard">
               <Button 
                 size="sm" 
-                className="relative overflow-hidden bg-gradient-to-r from-primary to-primary-glow text-primary-foreground font-semibold shadow-lg hover:shadow-xl transition-all duration-300 group"
+                className="relative overflow-hidden bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 group"
               >
                 <span className="relative z-10 flex items-center gap-2">
                   <Sparkles className="w-4 h-4" />
                   ابدأ مجاناً
                 </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-secondary to-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-gradient-to-r from-teal-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </Button>
             </Link>
           </div>
 
           {/* Mobile Menu Button */}
           <button
-            className="lg:hidden relative w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center hover:bg-muted transition-colors"
+            className={cn(
+              "lg:hidden relative w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
+              scrolled ? "bg-muted/50 hover:bg-muted" : "bg-white/10 hover:bg-white/20"
+            )}
             onClick={() => setIsOpen(!isOpen)}
             aria-label="Toggle menu"
           >
             <div className="relative w-5 h-5">
               <span className={cn(
-                "absolute left-0 w-5 h-0.5 bg-foreground rounded-full transition-all duration-300",
+                "absolute left-0 w-5 h-0.5 rounded-full transition-all duration-300",
+                scrolled ? "bg-foreground" : "bg-white",
                 isOpen ? "top-1/2 -translate-y-1/2 rotate-45" : "top-1"
               )} />
               <span className={cn(
-                "absolute left-0 top-1/2 -translate-y-1/2 w-5 h-0.5 bg-foreground rounded-full transition-all duration-300",
+                "absolute left-0 top-1/2 -translate-y-1/2 w-5 h-0.5 rounded-full transition-all duration-300",
+                scrolled ? "bg-foreground" : "bg-white",
                 isOpen ? "opacity-0 scale-0" : "opacity-100"
               )} />
               <span className={cn(
-                "absolute left-0 w-5 h-0.5 bg-foreground rounded-full transition-all duration-300",
+                "absolute left-0 w-5 h-0.5 rounded-full transition-all duration-300",
+                scrolled ? "bg-foreground" : "bg-white",
                 isOpen ? "top-1/2 -translate-y-1/2 -rotate-45" : "bottom-1"
               )} />
             </div>
@@ -125,15 +149,22 @@ const Navbar = () => {
           "lg:hidden overflow-hidden transition-all duration-500 ease-out",
           isOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
         )}>
-          <div className="py-6 space-y-2 border-t border-border/50">
-            {navLinks.map((link, index) => (
+          <div className={cn(
+            "py-6 space-y-2 border-t",
+            scrolled ? "border-border/50" : "border-white/10"
+          )}>
+            {navLinks.map((link) => (
               link.isRoute ? (
                 <Link
                   key={link.name}
                   to={link.href}
-                  className="block px-4 py-3 text-foreground hover:text-primary hover:bg-primary/5 rounded-xl transition-all duration-200 font-medium"
+                  className={cn(
+                    "block px-4 py-3 rounded-xl transition-all duration-200 font-medium",
+                    scrolled 
+                      ? "text-foreground hover:text-primary hover:bg-primary/5" 
+                      : "text-white hover:bg-white/10"
+                  )}
                   onClick={() => setIsOpen(false)}
-                  style={{ animationDelay: `${index * 0.05}s` }}
                 >
                   {link.name}
                 </Link>
@@ -141,7 +172,12 @@ const Navbar = () => {
                 <a
                   key={link.name}
                   href={link.href}
-                  className="block px-4 py-3 text-foreground hover:text-primary hover:bg-primary/5 rounded-xl transition-all duration-200 font-medium"
+                  className={cn(
+                    "block px-4 py-3 rounded-xl transition-all duration-200 font-medium",
+                    scrolled 
+                      ? "text-foreground hover:text-primary hover:bg-primary/5" 
+                      : "text-white hover:bg-white/10"
+                  )}
                   onClick={() => setIsOpen(false)}
                 >
                   {link.name}
@@ -155,7 +191,7 @@ const Navbar = () => {
                 </Button>
               </Link>
               <Link to="/dashboard" onClick={() => setIsOpen(false)}>
-                <Button className="w-full bg-gradient-to-r from-primary to-secondary">
+                <Button className="w-full bg-gradient-to-r from-emerald-500 to-teal-500">
                   <Sparkles className="w-4 h-4 ml-2" />
                   ابدأ مجاناً
                 </Button>

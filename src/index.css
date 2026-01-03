@@ -8,6 +8,8 @@
 @import '@fontsource/cairo/700.css';
 @import '@fontsource/cairo/800.css';
 
+/* Tajawal is loaded from Google Fonts in index.html */
+
 @layer base {
   :root {
     /* Arabic Email Marketing Theme - Light */
