@@ -79,27 +79,36 @@ serve(async (req) => {
 
     console.log("Generating image with prompt:", enhancedPrompt);
 
+    console.log("Calling AI gateway with model: google/gemini-2.5-flash-image-preview");
+    
+    const requestBody = {
+      model: "google/gemini-2.5-flash-image-preview",
+      messages: [
+        {
+          role: "user",
+          content: enhancedPrompt,
+        },
+      ],
+      modalities: ["image", "text"],
+    };
+    
+    console.log("Request body:", JSON.stringify(requestBody));
+    
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image-preview",
-        messages: [
-          {
-            role: "user",
-            content: enhancedPrompt,
-          },
-        ],
-        modalities: ["image", "text"],
-      }),
+      body: JSON.stringify(requestBody),
     });
+
+    console.log("AI gateway response status:", response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
+      console.error("Full error details:", errorText);
       
       if (response.status === 429) {
         return new Response(
