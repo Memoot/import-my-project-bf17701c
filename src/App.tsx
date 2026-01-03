@@ -28,6 +28,7 @@ import LandingPageEditorPage from "./pages/dashboard/LandingPageEditorPage";
 import LandingPagePreviewPage from "./pages/dashboard/LandingPagePreviewPage";
 import TemplateImagesPage from "./pages/dashboard/TemplateImagesPage";
 import AdminPage from "./pages/dashboard/AdminPage";
+import AdminDashboardPage from "./pages/dashboard/AdminDashboardPage";
 import AdminTemplatesPage from "./pages/dashboard/AdminTemplatesPage";
 import UploadTemplatesPage from "./pages/dashboard/UploadTemplatesPage";
 import AIImageGeneratorPage from "./pages/dashboard/AIImageGeneratorPage";
@@ -40,6 +41,8 @@ import ApiKeysManagementPage from "./pages/dashboard/ApiKeysManagementPage";
 import AdPackagesManagementPage from "./pages/dashboard/AdPackagesManagementPage";
 import AdRequestsManagementPage from "./pages/dashboard/AdRequestsManagementPage";
 import ArticlesManagementPage from "./pages/dashboard/ArticlesManagementPage";
+import AdsManagementPage from "./pages/dashboard/AdsManagementPage";
+import ContactMessagesPage from "./pages/dashboard/ContactMessagesPage";
 import MyAdRequestsPage from "./pages/dashboard/MyAdRequestsPage";
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -84,13 +87,16 @@ const App = () => (
           <Route path="/dashboard/pricing" element={<ProtectedRoute><PricingPage /></ProtectedRoute>} />
           <Route path="/dashboard/my-ads" element={<ProtectedRoute><MyAdRequestsPage /></ProtectedRoute>} />
           {/* Admin Routes */}
-          <Route path="/dashboard/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
+          <Route path="/dashboard/admin" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
+          <Route path="/dashboard/admin/roles" element={<AdminRoute><AdminPage /></AdminRoute>} />
           <Route path="/dashboard/admin/templates" element={<AdminRoute><AdminTemplatesPage /></AdminRoute>} />
           <Route path="/dashboard/admin/upload-templates" element={<AdminRoute><UploadTemplatesPage /></AdminRoute>} />
           <Route path="/dashboard/admin/users" element={<AdminRoute><UsersManagementPage /></AdminRoute>} />
           <Route path="/dashboard/admin/ad-packages" element={<AdminRoute><AdPackagesManagementPage /></AdminRoute>} />
           <Route path="/dashboard/admin/ad-requests" element={<AdminRoute><AdRequestsManagementPage /></AdminRoute>} />
+          <Route path="/dashboard/admin/ads" element={<AdminRoute><AdsManagementPage /></AdminRoute>} />
           <Route path="/dashboard/admin/articles" element={<AdminRoute><ArticlesManagementPage /></AdminRoute>} />
+          <Route path="/dashboard/admin/messages" element={<AdminRoute><ContactMessagesPage /></AdminRoute>} />
           <Route path="/dashboard/admin/plans" element={<AdminRoute><PlansManagementPage /></AdminRoute>} />
           <Route path="/dashboard/admin/subscriptions" element={<AdminRoute><SubscriptionsManagementPage /></AdminRoute>} />
           <Route path="/dashboard/admin/api-keys" element={<AdminRoute><ApiKeysManagementPage /></AdminRoute>} />

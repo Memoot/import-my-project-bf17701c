@@ -51,6 +51,22 @@ const transformPricing = (data: any): AdPricing => ({
   ad_type: 'standard',
 });
 
+// Get all advertisements (for admin)
+export function useAdvertisements() {
+  return useQuery({
+    queryKey: ["advertisements", "all"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("advertisements")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return (data || []).map(transformAd) as Advertisement[];
+    },
+  });
+}
+
 // Get active advertisements for display
 export function useActiveAdvertisements() {
   return useQuery({
@@ -66,6 +82,99 @@ export function useActiveAdvertisements() {
 
       if (error) throw error;
       return (data || []).map(transformAd) as Advertisement[];
+    },
+  });
+}
+
+// Create advertisement
+export function useCreateAdvertisement() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (adData: {
+      title: string;
+      description?: string;
+      image_url?: string;
+      link_url?: string;
+      position?: string;
+      priority?: number;
+      start_date: string;
+      end_date: string;
+      is_active?: boolean;
+      request_id?: string | null;
+    }) => {
+      const { data, error } = await supabase
+        .from("advertisements")
+        .insert([{
+          title: adData.title,
+          description: adData.description,
+          image_url: adData.image_url,
+          link_url: adData.link_url,
+          position: adData.position,
+          priority: adData.priority,
+          start_date: adData.start_date,
+          end_date: adData.end_date,
+          is_active: adData.is_active,
+          request_id: adData.request_id,
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["advertisements"] });
+      toast({ title: "تم إنشاء الإعلان بنجاح" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    },
+  });
+}
+
+// Update advertisement
+export function useUpdateAdvertisement() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, ...data }: Partial<Advertisement> & { id: string }) => {
+      const { error } = await supabase
+        .from("advertisements")
+        .update(data)
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["advertisements"] });
+      toast({ title: "تم تحديث الإعلان بنجاح" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    },
+  });
+}
+
+// Delete advertisement
+export function useDeleteAdvertisement() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("advertisements")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["advertisements"] });
+      toast({ title: "تم حذف الإعلان بنجاح" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
     },
   });
 }
