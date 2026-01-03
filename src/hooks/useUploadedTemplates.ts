@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 export interface UploadedTemplate {
@@ -18,17 +17,15 @@ export interface UploadedTemplate {
   updated_at: string;
 }
 
+// Mock implementation - table doesn't exist in database
+const mockTemplates: UploadedTemplate[] = [];
+
 export function useUploadedTemplates() {
   return useQuery({
     queryKey: ["uploaded-templates"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("uploaded_templates")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data as UploadedTemplate[];
+      // Return empty array - table doesn't exist
+      return mockTemplates;
     },
   });
 }
@@ -38,14 +35,15 @@ export function useCreateUploadedTemplate() {
 
   return useMutation({
     mutationFn: async (template: Omit<UploadedTemplate, "id" | "created_at" | "updated_at">) => {
-      const { data, error } = await supabase
-        .from("uploaded_templates")
-        .insert(template)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data as UploadedTemplate;
+      // Mock: add to local array
+      const newTemplate: UploadedTemplate = {
+        ...template,
+        id: crypto.randomUUID(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      mockTemplates.push(newTemplate);
+      return newTemplate;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["uploaded-templates"] });
@@ -69,12 +67,10 @@ export function useDeleteUploadedTemplate() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("uploaded_templates")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
+      const index = mockTemplates.findIndex(t => t.id === id);
+      if (index > -1) {
+        mockTemplates.splice(index, 1);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["uploaded-templates"] });
@@ -98,12 +94,10 @@ export function useToggleUploadedTemplateStatus() {
 
   return useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
-      const { error } = await supabase
-        .from("uploaded_templates")
-        .update({ is_active })
-        .eq("id", id);
-
-      if (error) throw error;
+      const template = mockTemplates.find(t => t.id === id);
+      if (template) {
+        template.is_active = is_active;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["uploaded-templates"] });

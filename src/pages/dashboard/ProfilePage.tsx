@@ -56,12 +56,12 @@ export default function ProfilePage() {
       // Load profile data
       const { data: profile } = await supabase
         .from("profiles")
-        .select("display_name")
-        .eq("id", user.id)
-        .single();
+        .select("full_name")
+        .eq("user_id", user.id)
+        .maybeSingle();
       
       if (profile) {
-        setDisplayName(profile.display_name || "");
+        setDisplayName(profile.full_name || "");
       }
       
       setLoading(false);
@@ -92,8 +92,8 @@ export default function ProfilePage() {
 
       const { error } = await supabase
         .from("profiles")
-        .update({ display_name: displayName.trim() || null })
-        .eq("id", user.id);
+        .update({ full_name: displayName.trim() || null })
+        .eq("user_id", user.id);
 
       if (error) throw error;
 

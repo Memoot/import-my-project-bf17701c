@@ -58,8 +58,9 @@ import { ar } from "date-fns/locale";
 
 interface UserProfile {
   id: string;
+  user_id: string;
   email: string | null;
-  display_name: string | null;
+  full_name: string | null;
   created_at: string;
   role?: "admin" | "user";
 }
@@ -96,7 +97,7 @@ export default function UsersManagementPage() {
 
       // Combine profiles with roles
       const usersWithRoles = profiles?.map((profile) => {
-        const userRole = roles?.find((r) => r.user_id === profile.id);
+        const userRole = roles?.find((r) => r.user_id === profile.user_id);
         return {
           ...profile,
           role: userRole?.role || "user",
@@ -130,8 +131,8 @@ export default function UsersManagementPage() {
       if (userData.displayName && data.user?.id) {
         await supabase
           .from("profiles")
-          .update({ display_name: userData.displayName })
-          .eq("id", data.user.id);
+          .update({ full_name: userData.displayName })
+          .eq("user_id", data.user.id);
       }
 
       // Send welcome email
@@ -260,7 +261,7 @@ export default function UsersManagementPage() {
   const filteredUsers = users?.filter(
     (user) =>
       user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.display_name?.toLowerCase().includes(searchQuery.toLowerCase())
+      user.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const adminCount = users?.filter((u) => u.role === "admin").length || 0;
@@ -472,7 +473,7 @@ export default function UsersManagementPage() {
                                   )}
                                 </div>
                                 <span className="font-medium">
-                                  {user.display_name || "بدون اسم"}
+                                  {user.full_name || "بدون اسم"}
                                 </span>
                               </div>
                             </TableCell>
