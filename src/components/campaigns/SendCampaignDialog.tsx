@@ -95,7 +95,7 @@ export function SendCampaignDialog({
       if (limitCheck.warning) {
         toast({
           title: 'تنبيه',
-          description: `${limitCheck.message} (${limitCheck.percent}%)`,
+          description: limitCheck.message || 'اقتربت من الحد الأقصى',
           variant: 'default',
         });
       }

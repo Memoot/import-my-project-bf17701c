@@ -209,7 +209,7 @@ const Footer = forwardRef<HTMLElement>((props, ref) => {
               © {new Date().getFullYear()} ماركيتلي. جميع الحقوق محفوظة.
             </p>
             <p className="text-background/60 text-sm flex items-center gap-1">
-              صُنع بـ <Heart className="w-4 h-4 text-red-500 animate-pulse" fill="currentColor" /> في المملكة العربية السعودية
+              برمجة وتطوير: <span className="text-emerald-400 font-medium mx-1">سهير النشاش</span> | صُنع بـ <Heart className="w-4 h-4 text-red-500 animate-pulse mx-1" fill="currentColor" /> في المملكة العربية السعودية
             </p>
             
             {/* Back to Top Button */}
