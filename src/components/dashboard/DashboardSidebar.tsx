@@ -54,11 +54,12 @@ const adminItems = [
   { title: "إدارة المستخدمين", url: "/dashboard/admin/users", icon: Users },
   { title: "إدارة الخطط", url: "/dashboard/admin/plans", icon: Crown },
   { title: "إدارة الاشتراكات", url: "/dashboard/admin/subscriptions", icon: CreditCard },
+  { title: "طلبات الإعلانات", url: "/dashboard/admin/ad-requests", icon: Megaphone },
+  { title: "إدارة الإعلانات", url: "/dashboard/admin/ads", icon: TrendingUp },
+  { title: "إدارة المقالات", url: "/dashboard/admin/articles", icon: FileText },
+  { title: "رسائل التواصل", url: "/dashboard/admin/messages", icon: Inbox },
   { title: "مفاتيح API", url: "/dashboard/admin/api-keys", icon: Key },
-  { title: "إدارة الإعلانات", url: "/dashboard/admin/ads", icon: Megaphone },
-  { title: "تقارير الإعلانات", url: "/dashboard/admin/ads-reports", icon: TrendingUp },
   { title: "إدارة القوالب", url: "/dashboard/admin/templates", icon: Upload },
-  { title: "رفع قوالب جاهزة", url: "/dashboard/admin/upload-templates", icon: FileArchive },
 ];
 
 function SidebarContent({ 
