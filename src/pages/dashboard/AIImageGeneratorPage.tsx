@@ -1,23 +1,23 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import type { Session } from "@supabase/supabase-js";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  Sparkles, 
-  Download, 
-  Loader2, 
-  ImageIcon, 
+import {
+  Sparkles,
+  Download,
+  Loader2,
+  ImageIcon,
   Wand2,
   Copy,
-  RefreshCw
+  RefreshCw,
 } from "lucide-react";
 
 const imageStyles = [
@@ -37,11 +37,36 @@ const promptSuggestions = [
 
 export default function AIImageGeneratorPage() {
   const navigate = useNavigate();
+
+  const [session, setSession] = useState<Session | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
+
   const [prompt, setPrompt] = useState("");
   const [style, setStyle] = useState("professional");
   const [loading, setLoading] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [history, setHistory] = useState<Array<{ prompt: string; image: string }>>([]);
+
+  useEffect(() => {
+    // Listener first
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+    });
+
+    // Then read current session
+    supabase.auth
+      .getSession()
+      .then(({ data }) => setSession(data.session))
+      .finally(() => setSessionLoading(false));
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const canGenerate = useMemo(() => {
+    return !sessionLoading && !!session && !loading;
+  }, [sessionLoading, session, loading]);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -53,14 +78,18 @@ export default function AIImageGeneratorPage() {
       return;
     }
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    if (sessionLoading) {
+      toast({
+        title: "لحظة",
+        description: "جاري التحقق من تسجيل الدخول...",
+      });
+      return;
+    }
 
     if (!session) {
       toast({
         title: "خطأ",
-        description: "يرجى تسجيل الدخول أولاً",
+        description: "يرجى تسجيل الدخول أولاً (داخل نفس رابط المعاينة)",
         variant: "destructive",
       });
       navigate("/auth");
@@ -74,17 +103,17 @@ export default function AIImageGeneratorPage() {
       });
 
       if (error) {
-        // Supabase Functions errors can include response context
         const status: number | undefined =
           (error as any)?.context?.status ?? (error as any)?.status;
 
         let description = (error as any)?.message || "فشل في توليد الصورة";
 
-        if (status === 401) description = "يرجى تسجيل الدخول أولاً";
+        if (status === 401)
+          description =
+            "غير مصرح: تأكد أنك مسجل دخول داخل نفس رابط المعاينة، ثم أعد المحاولة";
         if (status === 429) description = "تم تجاوز الحد المسموح، جرّب لاحقاً";
         if (status === 402) description = "يرجى إضافة رصيد للمتابعة";
 
-        // Try to extract backend JSON error message if available
         const backendError = (error as any)?.context?.body;
         if (typeof backendError === "string") {
           try {
@@ -210,10 +239,10 @@ export default function AIImageGeneratorPage() {
                     </Select>
                   </div>
 
-                  <Button 
+                  <Button
                     className="w-full bg-primary-gradient hover:opacity-90"
                     onClick={handleGenerate}
-                    disabled={loading}
+                    disabled={!canGenerate}
                   >
                     {loading ? (
                       <>
