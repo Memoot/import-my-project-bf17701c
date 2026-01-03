@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export interface SubscriptionPlan {
@@ -59,103 +58,133 @@ export interface UsageLimitCheck {
   message?: string;
 }
 
-// Hook to get all plans
+// Default plans for demo
+const defaultPlans: SubscriptionPlan[] = [
+  {
+    id: "free",
+    name: "المجانية",
+    monthly_price: 0,
+    email_limit_per_month: 1000,
+    subscriber_limit: 500,
+    automation_limit: 1,
+    landing_page_limit: 2,
+    user_limit: 1,
+    advanced_automation: false,
+    advanced_analytics: false,
+    custom_domain: false,
+    remove_branding: false,
+    api_access: false,
+    is_active: true,
+    is_default: true,
+    display_order: 0,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: "pro",
+    name: "احترافية",
+    monthly_price: 29,
+    email_limit_per_month: 10000,
+    subscriber_limit: 5000,
+    automation_limit: 10,
+    landing_page_limit: 20,
+    user_limit: 3,
+    advanced_automation: true,
+    advanced_analytics: true,
+    custom_domain: true,
+    remove_branding: true,
+    api_access: true,
+    is_active: true,
+    is_default: false,
+    display_order: 1,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+];
+
+const PLANS_KEY = 'subscription_plans';
+const SUBS_KEY = 'user_subscriptions';
+
+const getPlansFromStorage = (): SubscriptionPlan[] => {
+  try {
+    const data = localStorage.getItem(PLANS_KEY);
+    return data ? JSON.parse(data) : defaultPlans;
+  } catch { return defaultPlans; }
+};
+
+const savePlansToStorage = (plans: SubscriptionPlan[]) => {
+  localStorage.setItem(PLANS_KEY, JSON.stringify(plans));
+};
+
 export function useSubscriptionPlans() {
   return useQuery({
     queryKey: ["subscription-plans"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("subscription_plans")
-        .select("*")
-        .order("display_order");
-      
-      if (error) throw error;
-      return data as SubscriptionPlan[];
-    },
+    queryFn: async () => getPlansFromStorage(),
   });
 }
 
-// Hook to get current user's subscription
 export function useUserSubscription() {
   return useQuery({
     queryKey: ["user-subscription"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-
-      const { data, error } = await supabase
-        .from("user_subscriptions")
-        .select(`
-          *,
-          plan:subscription_plans(*)
-        `)
-        .eq("user_id", user.id)
-        .eq("status", "active")
-        .maybeSingle();
-      
-      if (error) throw error;
-      return data as (UserSubscription & { plan: SubscriptionPlan }) | null;
+      // Return default free plan for demo
+      return {
+        id: "demo",
+        user_id: "demo",
+        plan_id: "free",
+        status: "active",
+        started_at: new Date().toISOString(),
+        expires_at: null,
+        billing_cycle_start: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        plan: defaultPlans[0],
+      } as UserSubscription & { plan: SubscriptionPlan };
     },
   });
 }
 
-// Hook to get current user's usage
 export function useUserUsage() {
   return useQuery({
     queryKey: ["user-usage"],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-
-      const currentPeriod = new Date().toISOString().slice(0, 7) + "-01";
-      
-      const { data, error } = await supabase
-        .from("usage_tracking")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("billing_period_start", currentPeriod)
-        .maybeSingle();
-      
-      if (error) throw error;
-      return data as UsageTracking | null;
-    },
+    queryFn: async () => ({
+      id: "demo",
+      user_id: "demo",
+      billing_period_start: new Date().toISOString().slice(0, 7) + "-01",
+      emails_sent: 0,
+      subscribers_count: 0,
+      automations_count: 0,
+      landing_pages_count: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } as UsageTracking),
   });
 }
 
-// Hook to check usage limit (calls database function)
 export function useCheckUsageLimit(action: string) {
   return useQuery({
     queryKey: ["usage-limit", action],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return { allowed: false, reason: "not_authenticated" } as UsageLimitCheck;
-
-      const { data, error } = await supabase.rpc("check_usage_limit", {
-        p_user_id: user.id,
-        p_action: action,
-      });
-      
-      if (error) throw error;
-      return data as unknown as UsageLimitCheck;
-    },
-    staleTime: 30000, // 30 seconds
+    queryFn: async () => ({ allowed: true, unlimited: true } as UsageLimitCheck),
+    staleTime: 30000,
   });
 }
 
-// Admin hook to manage plans
 export function useManagePlans() {
   const queryClient = useQueryClient();
 
   const createPlan = useMutation({
     mutationFn: async (plan: Omit<Partial<SubscriptionPlan>, 'id' | 'created_at' | 'updated_at'>) => {
-      const { data, error } = await supabase
-        .from("subscription_plans")
-        .insert(plan as any)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
+      const plans = getPlansFromStorage();
+      const newPlan: SubscriptionPlan = {
+        ...defaultPlans[0],
+        ...plan,
+        id: crypto.randomUUID(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as SubscriptionPlan;
+      plans.push(newPlan);
+      savePlansToStorage(plans);
+      return newPlan;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subscription-plans"] });
@@ -168,15 +197,14 @@ export function useManagePlans() {
 
   const updatePlan = useMutation({
     mutationFn: async ({ id, ...plan }: Partial<SubscriptionPlan> & { id: string }) => {
-      const { data, error } = await supabase
-        .from("subscription_plans")
-        .update(plan)
-        .eq("id", id)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
+      const plans = getPlansFromStorage();
+      const index = plans.findIndex(p => p.id === id);
+      if (index !== -1) {
+        plans[index] = { ...plans[index], ...plan, updated_at: new Date().toISOString() };
+        savePlansToStorage(plans);
+        return plans[index];
+      }
+      throw new Error("Plan not found");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subscription-plans"] });
@@ -189,12 +217,8 @@ export function useManagePlans() {
 
   const deletePlan = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("subscription_plans")
-        .delete()
-        .eq("id", id);
-      
-      if (error) throw error;
+      const plans = getPlansFromStorage().filter(p => p.id !== id);
+      savePlansToStorage(plans);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subscription-plans"] });
@@ -208,50 +232,13 @@ export function useManagePlans() {
   return { createPlan, updatePlan, deletePlan };
 }
 
-// Admin hook to manage user subscriptions
 export function useManageSubscriptions() {
   const queryClient = useQueryClient();
 
   const assignPlan = useMutation({
     mutationFn: async ({ userId, planId }: { userId: string; planId: string }) => {
-      // First check if user already has a subscription
-      const { data: existing } = await supabase
-        .from("user_subscriptions")
-        .select("id")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (existing) {
-        // Update existing subscription
-        const { data, error } = await supabase
-          .from("user_subscriptions")
-          .update({
-            plan_id: planId,
-            status: "active",
-            started_at: new Date().toISOString(),
-            billing_cycle_start: new Date().toISOString(),
-          })
-          .eq("user_id", userId)
-          .select()
-          .single();
-        
-        if (error) throw error;
-        return data;
-      } else {
-        // Create new subscription
-        const { data, error } = await supabase
-          .from("user_subscriptions")
-          .insert({
-            user_id: userId,
-            plan_id: planId,
-            status: "active",
-          })
-          .select()
-          .single();
-        
-        if (error) throw error;
-        return data;
-      }
+      // Mock implementation
+      return { user_id: userId, plan_id: planId };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["all-subscriptions"] });
@@ -265,42 +252,20 @@ export function useManageSubscriptions() {
   return { assignPlan };
 }
 
-// Get all subscriptions (admin)
 export function useAllSubscriptions() {
   return useQuery({
     queryKey: ["all-subscriptions"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("user_subscriptions")
-        .select(`
-          *,
-          plan:subscription_plans(*)
-        `)
-        .order("created_at", { ascending: false });
-      
-      if (error) throw error;
-      return data as (UserSubscription & { plan: SubscriptionPlan })[];
-    },
+    queryFn: async () => [] as (UserSubscription & { plan: SubscriptionPlan })[],
   });
 }
 
-// Hook to increment usage
 export function useIncrementUsage() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ field, amount = 1 }: { field: string; amount?: number }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const { data, error } = await supabase.rpc("increment_usage", {
-        p_user_id: user.id,
-        p_field: field,
-        p_amount: amount,
-      });
-      
-      if (error) throw error;
-      return data;
+      console.log("Incrementing usage:", field, amount);
+      return true;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-usage"] });

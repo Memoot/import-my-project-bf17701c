@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
 export interface Subscriber {
@@ -21,66 +20,60 @@ export interface SubscriberInput {
   source?: string;
 }
 
+const STORAGE_KEY = 'subscribers';
+
+const getSubscribersFromStorage = (): Subscriber[] => {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveSubscribersToStorage = (subscribers: Subscriber[]) => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(subscribers));
+};
+
 export function useSubscribers() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchSubscribers = useCallback(async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('subscribers')
-        .select('*')
-        .order('subscribed_at', { ascending: false });
-
-      if (error) throw error;
-      setSubscribers((data || []) as Subscriber[]);
-    } catch (error: any) {
-      console.error('Error fetching subscribers:', error);
-      toast({
-        title: 'خطأ في جلب المشتركين',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true);
+    const data = getSubscribersFromStorage();
+    setSubscribers(data);
+    setLoading(false);
   }, []);
 
   const addSubscriber = async (input: SubscriberInput): Promise<Subscriber | null> => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('يجب تسجيل الدخول');
+      // Check for duplicate
+      const existing = subscribers.find(s => s.email === input.email);
+      if (existing) {
+        throw new Error('هذا البريد الإلكتروني مسجل بالفعل');
       }
 
-      const { data, error } = await supabase
-        .from('subscribers')
-        .insert({
-          user_id: user.id,
-          email: input.email,
-          name: input.name || null,
-          source: input.source || 'manual',
-        })
-        .select()
-        .single();
+      const newSubscriber: Subscriber = {
+        id: crypto.randomUUID(),
+        user_id: 'local',
+        email: input.email,
+        name: input.name || null,
+        status: 'active',
+        source: input.source || 'manual',
+        subscribed_at: new Date().toISOString(),
+        unsubscribed_at: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
 
-      if (error) {
-        if (error.code === '23505') {
-          throw new Error('هذا البريد الإلكتروني مسجل بالفعل');
-        }
-        throw error;
-      }
-
-      const subscriber = data as Subscriber;
-      setSubscribers(prev => [subscriber, ...prev]);
-      toast({
-        title: 'تم إضافة المشترك',
-        description: 'تمت إضافة المشترك بنجاح',
-      });
-      return subscriber;
+      const updated = [newSubscriber, ...subscribers];
+      setSubscribers(updated);
+      saveSubscribersToStorage(updated);
+      
+      toast({ title: 'تم إضافة المشترك', description: 'تمت إضافة المشترك بنجاح' });
+      return newSubscriber;
     } catch (error: any) {
-      console.error('Error adding subscriber:', error);
       toast({
         title: 'خطأ في إضافة المشترك',
         description: error.message,
@@ -92,19 +85,13 @@ export function useSubscribers() {
 
   const updateSubscriber = async (id: string, updates: Partial<SubscriberInput & { status: string }>): Promise<boolean> => {
     try {
-      const { error } = await supabase
-        .from('subscribers')
-        .update(updates)
-        .eq('id', id);
-
-      if (error) throw error;
-
-      setSubscribers(prev =>
-        prev.map(s => s.id === id ? { ...s, ...updates } as Subscriber : s)
+      const updated = subscribers.map(s =>
+        s.id === id ? { ...s, ...updates, updated_at: new Date().toISOString() } as Subscriber : s
       );
+      setSubscribers(updated);
+      saveSubscribersToStorage(updated);
       return true;
     } catch (error: any) {
-      console.error('Error updating subscriber:', error);
       toast({
         title: 'خطأ في تحديث المشترك',
         description: error.message,
@@ -116,21 +103,12 @@ export function useSubscribers() {
 
   const deleteSubscriber = async (id: string): Promise<boolean> => {
     try {
-      const { error } = await supabase
-        .from('subscribers')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      setSubscribers(prev => prev.filter(s => s.id !== id));
-      toast({
-        title: 'تم حذف المشترك',
-        description: 'تم حذف المشترك بنجاح',
-      });
+      const updated = subscribers.filter(s => s.id !== id);
+      setSubscribers(updated);
+      saveSubscribersToStorage(updated);
+      toast({ title: 'تم حذف المشترك', description: 'تم حذف المشترك بنجاح' });
       return true;
     } catch (error: any) {
-      console.error('Error deleting subscriber:', error);
       toast({
         title: 'خطأ في حذف المشترك',
         description: error.message,
