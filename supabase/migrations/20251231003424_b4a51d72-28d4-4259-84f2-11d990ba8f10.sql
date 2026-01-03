@@ -1,0 +1,7 @@
+-- Deny anonymous access to profiles table
+CREATE POLICY "Deny anonymous access to profiles"
+ON public.profiles
+FOR ALL
+TO anon
+USING (false)
+WITH CHECK (false);

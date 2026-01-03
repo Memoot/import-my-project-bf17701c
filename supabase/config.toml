@@ -1,0 +1,13 @@
+project_id = "szkbifnbvnoolnrrzrxf"
+
+[functions.generate-email]
+verify_jwt = true
+
+[functions.generate-image]
+verify_jwt = true
+
+[functions.create-user]
+verify_jwt = false
+
+[functions.send-welcome-email]
+verify_jwt = false
