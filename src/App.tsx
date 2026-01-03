@@ -31,7 +31,7 @@ import AdminPage from "./pages/dashboard/AdminPage";
 import AdminDashboardPage from "./pages/dashboard/AdminDashboardPage";
 import AdminTemplatesPage from "./pages/dashboard/AdminTemplatesPage";
 import UploadTemplatesPage from "./pages/dashboard/UploadTemplatesPage";
-import AIImageGeneratorPage from "./pages/dashboard/AIImageGeneratorPage";
+import AIToolsPage from "./pages/dashboard/AIToolsPage";
 import ProfilePage from "./pages/dashboard/ProfilePage";
 import UsersManagementPage from "./pages/dashboard/UsersManagementPage";
 import PlansManagementPage from "./pages/dashboard/PlansManagementPage";
@@ -83,7 +83,7 @@ const App = () => (
           <Route path="/dashboard/landing-pages/edit/:id" element={<ProtectedRoute><LandingPageEditorPage /></ProtectedRoute>} />
           <Route path="/dashboard/landing-pages/preview/:id" element={<ProtectedRoute><LandingPagePreviewPage /></ProtectedRoute>} />
           <Route path="/dashboard/landing-pages/template-images" element={<ProtectedRoute><TemplateImagesPage /></ProtectedRoute>} />
-          <Route path="/dashboard/ai-images" element={<ProtectedRoute><AIImageGeneratorPage /></ProtectedRoute>} />
+          <Route path="/dashboard/ai-tools" element={<ProtectedRoute><AIToolsPage /></ProtectedRoute>} />
           <Route path="/dashboard/pricing" element={<ProtectedRoute><PricingPage /></ProtectedRoute>} />
           <Route path="/dashboard/my-ads" element={<ProtectedRoute><MyAdRequestsPage /></ProtectedRoute>} />
           {/* Admin Routes */}
