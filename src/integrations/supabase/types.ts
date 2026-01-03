@@ -109,6 +109,110 @@ export type Database = {
           },
         ]
       }
+      advertisements: {
+        Row: {
+          clicks_count: number | null
+          created_at: string
+          description: string | null
+          end_date: string
+          id: string
+          image_url: string | null
+          impressions_count: number | null
+          is_active: boolean | null
+          link_url: string | null
+          position: string
+          priority: number | null
+          request_id: string | null
+          start_date: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          clicks_count?: number | null
+          created_at?: string
+          description?: string | null
+          end_date: string
+          id?: string
+          image_url?: string | null
+          impressions_count?: number | null
+          is_active?: boolean | null
+          link_url?: string | null
+          position?: string
+          priority?: number | null
+          request_id?: string | null
+          start_date: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          clicks_count?: number | null
+          created_at?: string
+          description?: string | null
+          end_date?: string
+          id?: string
+          image_url?: string | null
+          impressions_count?: number | null
+          is_active?: boolean | null
+          link_url?: string | null
+          position?: string
+          priority?: number | null
+          request_id?: string | null
+          start_date?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advertisements_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "ad_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      api_keys: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          key_hash: string
+          key_prefix: string
+          last_used_at: string | null
+          name: string
+          permissions: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          key_hash: string
+          key_prefix: string
+          last_used_at?: string | null
+          name: string
+          permissions?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          key_hash?: string
+          key_prefix?: string
+          last_used_at?: string | null
+          name?: string
+          permissions?: string[] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       articles: {
         Row: {
           author_id: string | null
@@ -156,6 +260,183 @@ export type Database = {
           tags?: string[] | null
           title?: string
           updated_at?: string
+          views_count?: number | null
+        }
+        Relationships: []
+      }
+      campaigns: {
+        Row: {
+          clicks_count: number | null
+          content: Json
+          created_at: string
+          id: string
+          name: string
+          opens_count: number | null
+          recipients_count: number | null
+          scheduled_at: string | null
+          sent_at: string | null
+          status: string
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          clicks_count?: number | null
+          content?: Json
+          created_at?: string
+          id?: string
+          name: string
+          opens_count?: number | null
+          recipients_count?: number | null
+          scheduled_at?: string | null
+          sent_at?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          clicks_count?: number | null
+          content?: Json
+          created_at?: string
+          id?: string
+          name?: string
+          opens_count?: number | null
+          recipients_count?: number | null
+          scheduled_at?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      contact_messages: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+          replied_at: string | null
+          status: string
+          subject: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name: string
+          replied_at?: string | null
+          status?: string
+          subject?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          replied_at?: string | null
+          status?: string
+          subject?: string | null
+        }
+        Relationships: []
+      }
+      email_templates: {
+        Row: {
+          category: string
+          content: Json
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          is_system: boolean | null
+          name: string
+          subject: string | null
+          thumbnail_url: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          category?: string
+          content?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_system?: boolean | null
+          name: string
+          subject?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          category?: string
+          content?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_system?: boolean | null
+          name?: string
+          subject?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      landing_pages: {
+        Row: {
+          content: Json
+          conversions_count: number | null
+          created_at: string
+          description: string | null
+          id: string
+          is_published: boolean | null
+          published_at: string | null
+          settings: Json | null
+          slug: string
+          template_id: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          views_count: number | null
+        }
+        Insert: {
+          content?: Json
+          conversions_count?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean | null
+          published_at?: string | null
+          settings?: Json | null
+          slug: string
+          template_id?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+          views_count?: number | null
+        }
+        Update: {
+          content?: Json
+          conversions_count?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean | null
+          published_at?: string | null
+          settings?: Json | null
+          slug?: string
+          template_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
           views_count?: number | null
         }
         Relationships: []
@@ -211,6 +492,93 @@ export type Database = {
         }
         Relationships: []
       }
+      subscribers: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          metadata: Json | null
+          name: string | null
+          status: string
+          subscribed_at: string
+          tags: string[] | null
+          unsubscribed_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          metadata?: Json | null
+          name?: string | null
+          status?: string
+          subscribed_at?: string
+          tags?: string[] | null
+          unsubscribed_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          metadata?: Json | null
+          name?: string | null
+          status?: string
+          subscribed_at?: string
+          tags?: string[] | null
+          unsubscribed_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      subscription_plans: {
+        Row: {
+          billing_period: string
+          created_at: string
+          currency: string
+          description: string | null
+          display_order: number | null
+          features: Json | null
+          id: string
+          is_active: boolean | null
+          limits: Json | null
+          name: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          billing_period?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          display_order?: number | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          limits?: Json | null
+          name: string
+          price?: number
+          updated_at?: string
+        }
+        Update: {
+          billing_period?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          display_order?: number | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          limits?: Json | null
+          name?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -231,6 +599,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_subscriptions: {
+        Row: {
+          cancelled_at: string | null
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string
+          id: string
+          plan_id: string | null
+          status: string
+          updated_at: string
+          usage: Json | null
+          user_id: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string
+          id?: string
+          plan_id?: string | null
+          status?: string
+          updated_at?: string
+          usage?: Json | null
+          user_id: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string
+          id?: string
+          plan_id?: string | null
+          status?: string
+          updated_at?: string
+          usage?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

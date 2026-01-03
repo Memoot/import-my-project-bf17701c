@@ -52,7 +52,7 @@ const AdsSection = () => {
                 className="group relative overflow-hidden cursor-pointer transition-all duration-500 hover:shadow-2xl hover:shadow-primary/20 hover:-translate-y-2 border-border/50 bg-card/80 backdrop-blur-sm"
                 onClick={() => handleAdClick(ad.id, ad.link_url)}
               >
-                {ad.is_featured && (
+                {ad.priority > 5 && (
                   <Badge className="absolute top-3 right-3 z-10 bg-gradient-to-r from-amber-500 to-orange-500 border-0">
                     <Sparkles className="w-3 h-3 ml-1" />
                     مميز
@@ -85,7 +85,7 @@ const AdsSection = () => {
                   )}
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">
-                      {ad.advertiser_name}
+                      {ad.impressions_count} مشاهدة
                     </span>
                     <ExternalLink className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>

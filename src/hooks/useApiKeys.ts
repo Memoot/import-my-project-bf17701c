@@ -1,90 +1,118 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 export interface ApiKey {
   id: string;
-  key_name: string;
+  user_id: string;
+  name: string;
+  key_name: string; // Alias for name
+  key_hash: string;
+  key_prefix: string;
+  permissions: string[];
+  last_used_at: string | null;
+  expires_at: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  // Compatibility fields
   service_name: string;
   key_type: "predefined" | "custom";
   api_key_value: string;
   description: string | null;
   category: "ai" | "payments" | "email" | "storage" | "other";
-  is_active: boolean;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
 }
 
 export interface CreateApiKeyInput {
-  key_name: string;
-  service_name: string;
-  key_type: "predefined" | "custom";
-  api_key_value: string;
-  description?: string;
-  category: "ai" | "payments" | "email" | "storage" | "other";
-}
-
-export interface UpdateApiKeyInput {
-  id: string;
+  name?: string;
   key_name?: string;
   service_name?: string;
+  key_type?: "predefined" | "custom";
   api_key_value?: string;
   description?: string;
   category?: "ai" | "payments" | "email" | "storage" | "other";
-  is_active?: boolean;
+  permissions?: string[];
+  expires_at?: string;
 }
 
-const STORAGE_KEY = 'api_keys';
-
-const getKeysFromStorage = (): ApiKey[] => {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch {
-    return [];
-  }
-};
-
-const saveKeysToStorage = (keys: ApiKey[]) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(keys));
-};
+const transformKey = (data: any): ApiKey => ({
+  ...data,
+  key_name: data.name,
+  service_name: data.name,
+  key_type: 'custom',
+  api_key_value: `${data.key_prefix}...`,
+  description: null,
+  category: 'other',
+});
 
 export function useApiKeys() {
   return useQuery({
     queryKey: ["api-keys"],
     queryFn: async () => {
-      return getKeysFromStorage();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+
+      const { data, error } = await supabase
+        .from("api_keys")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return (data || []).map(transformKey) as ApiKey[];
     },
   });
 }
+
+// Simple hash function for demo purposes
+const hashKey = async (key: string): Promise<string> => {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(key);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+};
 
 export function useCreateApiKey() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (input: CreateApiKeyInput) => {
-      const keys = getKeysFromStorage();
-      const newKey: ApiKey = {
-        id: crypto.randomUUID(),
-        ...input,
-        description: input.description || null,
-        is_active: true,
-        created_by: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      keys.unshift(newKey);
-      saveKeysToStorage(keys);
-      return newKey;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("غير مصرح");
+
+      // Generate API key
+      const rawKey = `mk_${crypto.randomUUID().replace(/-/g, '')}`;
+      const keyHash = await hashKey(input.api_key_value || rawKey);
+      const keyPrefix = (input.api_key_value || rawKey).substring(0, 10);
+
+      const { data, error } = await supabase
+        .from("api_keys")
+        .insert({
+          user_id: user.id,
+          name: input.name || input.key_name || input.service_name || 'مفتاح جديد',
+          key_hash: keyHash,
+          key_prefix: keyPrefix,
+          permissions: input.permissions || [],
+          expires_at: input.expires_at || null,
+          is_active: true,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Return with the raw key (only shown once)
+      return { ...transformKey(data), rawKey, api_key_value: input.api_key_value || rawKey } as ApiKey & { rawKey: string };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["api-keys"] });
-      toast({ title: "تم بنجاح", description: "تم إضافة مفتاح API بنجاح" });
+      toast({ title: "تم بنجاح", description: "تم إنشاء مفتاح API بنجاح" });
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast({
         title: "خطأ",
-        description: error.message.includes("duplicate") ? "اسم المفتاح موجود مسبقاً" : "فشل في إضافة مفتاح API",
+        description: error.message || "فشل في إنشاء مفتاح API",
         variant: "destructive",
       });
     },
@@ -95,22 +123,31 @@ export function useUpdateApiKey() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, ...updates }: UpdateApiKeyInput) => {
-      const keys = getKeysFromStorage();
-      const index = keys.findIndex(k => k.id === id);
-      if (index !== -1) {
-        keys[index] = { ...keys[index], ...updates, updated_at: new Date().toISOString() };
-        saveKeysToStorage(keys);
-        return keys[index];
+    mutationFn: async ({ id, ...updates }: Partial<CreateApiKeyInput> & { id: string }) => {
+      const updateData: any = {};
+      if (updates.name || updates.key_name || updates.service_name) {
+        updateData.name = updates.name || updates.key_name || updates.service_name;
       }
-      throw new Error("Key not found");
+      if (updates.permissions) updateData.permissions = updates.permissions;
+      if (updates.expires_at) updateData.expires_at = updates.expires_at;
+
+      const { error } = await supabase
+        .from("api_keys")
+        .update(updateData)
+        .eq("id", id);
+
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["api-keys"] });
-      toast({ title: "تم بنجاح", description: "تم تحديث مفتاح API بنجاح" });
+      toast({ title: "تم بنجاح", description: "تم تحديث المفتاح" });
     },
-    onError: () => {
-      toast({ title: "خطأ", description: "فشل في تحديث مفتاح API", variant: "destructive" });
+    onError: (error: any) => {
+      toast({ 
+        title: "خطأ", 
+        description: error.message || "فشل في تحديث المفتاح", 
+        variant: "destructive" 
+      });
     },
   });
 }
@@ -120,15 +157,23 @@ export function useDeleteApiKey() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const keys = getKeysFromStorage().filter(k => k.id !== id);
-      saveKeysToStorage(keys);
+      const { error } = await supabase
+        .from("api_keys")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["api-keys"] });
-      toast({ title: "تم بنجاح", description: "تم حذف مفتاح API بنجاح" });
+      toast({ title: "تم بنجاح", description: "تم حذف المفتاح" });
     },
-    onError: () => {
-      toast({ title: "خطأ", description: "فشل في حذف مفتاح API", variant: "destructive" });
+    onError: (error: any) => {
+      toast({ 
+        title: "خطأ", 
+        description: error.message || "فشل في حذف المفتاح", 
+        variant: "destructive" 
+      });
     },
   });
 }
@@ -138,21 +183,26 @@ export function useToggleApiKey() {
 
   return useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
-      const keys = getKeysFromStorage();
-      const index = keys.findIndex(k => k.id === id);
-      if (index !== -1) {
-        keys[index] = { ...keys[index], is_active, updated_at: new Date().toISOString() };
-        saveKeysToStorage(keys);
-        return keys[index];
-      }
-      throw new Error("Key not found");
+      const { error } = await supabase
+        .from("api_keys")
+        .update({ is_active })
+        .eq("id", id);
+
+      if (error) throw error;
     },
-    onSuccess: (data) => {
+    onSuccess: (_, { is_active }) => {
       queryClient.invalidateQueries({ queryKey: ["api-keys"] });
-      toast({ title: "تم بنجاح", description: data.is_active ? "تم تفعيل المفتاح" : "تم تعطيل المفتاح" });
+      toast({ 
+        title: "تم بنجاح", 
+        description: is_active ? "تم تفعيل المفتاح" : "تم تعطيل المفتاح" 
+      });
     },
-    onError: () => {
-      toast({ title: "خطأ", description: "فشل في تغيير حالة المفتاح", variant: "destructive" });
+    onError: (error: any) => {
+      toast({ 
+        title: "خطأ", 
+        description: error.message || "فشل في تغيير حالة المفتاح", 
+        variant: "destructive" 
+      });
     },
   });
 }
