@@ -50,11 +50,11 @@ export function QuickActions() {
             <Button
               key={action.title}
               variant="ghost"
-              className={`h-auto flex-col items-start p-4 ${action.color} transition-colors`}
+              className={`h-auto flex-col items-center justify-center p-3 sm:p-4 ${action.color} transition-colors rounded-xl min-h-[100px] w-full overflow-hidden`}
             >
-              <action.icon className="w-6 h-6 mb-2" />
-              <span className="font-medium">{action.title}</span>
-              <span className="text-xs opacity-70 mt-1">{action.description}</span>
+              <action.icon className="w-5 h-5 sm:w-6 sm:h-6 mb-1 sm:mb-2 flex-shrink-0" />
+              <span className="font-medium text-xs sm:text-sm text-center leading-tight truncate max-w-full">{action.title}</span>
+              <span className="text-[10px] sm:text-xs opacity-70 mt-1 text-center leading-tight line-clamp-2 max-w-full">{action.description}</span>
             </Button>
           ))}
         </div>
