@@ -6,7 +6,7 @@ import { SubscribersChart } from "@/components/dashboard/SubscribersChart";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { CurrentPlanCard } from "@/components/subscription/CurrentPlanCard";
 import { UsageBar } from "@/components/subscription/UsageBar";
-import { useUserSubscription, useUserUsage } from "@/hooks/useSubscription";
+import { useUserSubscription } from "@/hooks/useSubscription";
 import { Mail, Users, MousePointer, TrendingUp, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -47,7 +47,8 @@ const stats = [
 
 export default function Dashboard() {
   const { data: subscription } = useUserSubscription();
-  const { data: usage } = useUserUsage();
+  const usage = subscription?.usage || {};
+  const limits = (subscription?.plan?.limits || {}) as Record<string, number>;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30 flex w-full">
@@ -101,23 +102,23 @@ export default function Dashboard() {
               <CardContent className="space-y-4">
                 <UsageBar 
                   label="الرسائل المرسلة"
-                  current={usage?.emails_sent || 0}
-                  limit={subscription?.plan?.email_limit_per_month || null}
+                  current={usage.emails_sent || 0}
+                  limit={limits.emails_per_month || null}
                 />
                 <UsageBar 
                   label="المشتركين"
-                  current={usage?.subscribers_count || 0}
-                  limit={subscription?.plan?.subscriber_limit || null}
+                  current={usage.subscribers_count || 0}
+                  limit={limits.subscribers || null}
                 />
                 <UsageBar 
                   label="صفحات الهبوط"
-                  current={usage?.landing_pages_count || 0}
-                  limit={subscription?.plan?.landing_page_limit || null}
+                  current={usage.landing_pages_count || 0}
+                  limit={limits.landing_pages || null}
                 />
                 <UsageBar 
-                  label="الأتمتة"
-                  current={usage?.automations_count || 0}
-                  limit={subscription?.plan?.automation_limit || null}
+                  label="الحملات"
+                  current={usage.campaigns_count || 0}
+                  limit={limits.campaigns_per_month || null}
                 />
               </CardContent>
             </Card>

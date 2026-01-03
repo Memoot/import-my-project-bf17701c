@@ -1,39 +1,63 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
-export interface LandingPageData {
+export interface LandingPage {
   id: string;
   user_id: string;
-  name: string;
-  template_id: number | null;
-  pages: any[];
+  title: string;
+  name: string; // Alias for title
+  slug: string;
+  description: string | null;
+  template_id: string | null;
+  content: Record<string, any>;
+  pages: any[]; // Alias for sections in content
   settings: Record<string, any>;
   is_published: boolean;
+  published_at: string | null;
   published_url: string | null;
+  views_count: number;
+  conversions_count: number;
   created_at: string;
   updated_at: string;
 }
 
-const STORAGE_KEY = 'landing_pages';
+export interface LandingPageData extends LandingPage {}
 
-const getPagesFromStorage = (): LandingPageData[] => {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch {
-    return [];
-  }
-};
+export interface LandingPageInput {
+  title?: string;
+  name?: string;
+  slug?: string;
+  description?: string;
+  template_id?: string | number;
+  content?: Record<string, any>;
+  pages?: any[];
+  settings?: Record<string, any>;
+  user_id?: string;
+}
 
-const savePagesToStorage = (pages: LandingPageData[]) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(pages));
-};
+const transformPage = (data: any): LandingPage => ({
+  ...data,
+  name: data.title,
+  pages: data.content?.sections || [],
+  published_url: data.is_published ? `/p/${data.slug}` : null,
+});
 
 export function useLandingPages() {
   return useQuery({
     queryKey: ["landing-pages"],
     queryFn: async () => {
-      return getPagesFromStorage();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+
+      const { data, error } = await supabase
+        .from("landing_pages")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return (data || []).map(transformPage) as LandingPage[];
     },
   });
 }
@@ -43,8 +67,15 @@ export function useLandingPage(id: string | undefined) {
     queryKey: ["landing-page", id],
     queryFn: async () => {
       if (!id) return null;
-      const pages = getPagesFromStorage();
-      return pages.find(p => p.id === id) || null;
+
+      const { data, error } = await supabase
+        .from("landing_pages")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data ? transformPage(data) : null;
     },
     enabled: !!id,
   });
@@ -54,36 +85,43 @@ export function useCreateLandingPage() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: {
-      name: string;
-      template_id?: number;
-      pages: any[];
-      settings: Record<string, any>;
-      user_id: string;
-    }) => {
-      const pages = getPagesFromStorage();
-      const newPage: LandingPageData = {
-        id: crypto.randomUUID(),
-        user_id: data.user_id,
-        name: data.name,
-        template_id: data.template_id || null,
-        pages: data.pages,
-        settings: data.settings,
-        is_published: false,
-        published_url: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      pages.unshift(newPage);
-      savePagesToStorage(pages);
-      return newPage;
+    mutationFn: async (input: LandingPageInput) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("غير مصرح");
+
+      const title = input.title || input.name || 'صفحة جديدة';
+      const slug = input.slug || `page-${Date.now()}`;
+
+      const { data, error } = await supabase
+        .from("landing_pages")
+        .insert({
+          user_id: input.user_id || user.id,
+          title,
+          slug,
+          description: input.description || null,
+          template_id: input.template_id?.toString() || null,
+          content: input.content || { sections: input.pages || [] },
+          settings: input.settings || {},
+        })
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === '23505') throw new Error('هذا الرابط مستخدم بالفعل');
+        throw error;
+      }
+      return transformPage(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["landing-pages"] });
       toast({ title: "تم الإنشاء", description: "تم إنشاء صفحة الهبوط بنجاح" });
     },
-    onError: () => {
-      toast({ title: "خطأ", description: "فشل في إنشاء صفحة الهبوط", variant: "destructive" });
+    onError: (error: any) => {
+      toast({ 
+        title: "خطأ", 
+        description: error.message || "فشل في إنشاء صفحة الهبوط", 
+        variant: "destructive" 
+      });
     },
   });
 }
@@ -92,23 +130,35 @@ export function useUpdateLandingPage() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, ...data }: Partial<LandingPageData> & { id: string }) => {
-      const pages = getPagesFromStorage();
-      const index = pages.findIndex(p => p.id === id);
-      if (index !== -1) {
-        pages[index] = { ...pages[index], ...data, updated_at: new Date().toISOString() };
-        savePagesToStorage(pages);
-        return pages[index];
-      }
-      throw new Error("Page not found");
+    mutationFn: async ({ id, ...input }: Partial<LandingPageInput> & { id: string }) => {
+      const updateData: any = {};
+      
+      if (input.title || input.name) updateData.title = input.title || input.name;
+      if (input.slug) updateData.slug = input.slug;
+      if (input.description !== undefined) updateData.description = input.description;
+      if (input.template_id !== undefined) updateData.template_id = input.template_id?.toString();
+      if (input.content) updateData.content = input.content;
+      if (input.pages) updateData.content = { sections: input.pages };
+      if (input.settings) updateData.settings = input.settings;
+
+      const { error } = await supabase
+        .from("landing_pages")
+        .update(updateData)
+        .eq("id", id);
+
+      if (error) throw error;
     },
-    onSuccess: (data) => {
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["landing-pages"] });
-      queryClient.invalidateQueries({ queryKey: ["landing-page", data.id] });
+      queryClient.invalidateQueries({ queryKey: ["landing-page", id] });
       toast({ title: "تم الحفظ", description: "تم حفظ التغييرات بنجاح" });
     },
-    onError: () => {
-      toast({ title: "خطأ", description: "فشل في حفظ التغييرات", variant: "destructive" });
+    onError: (error: any) => {
+      toast({ 
+        title: "خطأ", 
+        description: error.message || "فشل في حفظ التغييرات", 
+        variant: "destructive" 
+      });
     },
   });
 }
@@ -118,15 +168,23 @@ export function useDeleteLandingPage() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const pages = getPagesFromStorage().filter(p => p.id !== id);
-      savePagesToStorage(pages);
+      const { error } = await supabase
+        .from("landing_pages")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["landing-pages"] });
       toast({ title: "تم الحذف", description: "تم حذف صفحة الهبوط بنجاح" });
     },
-    onError: () => {
-      toast({ title: "خطأ", description: "فشل في حذف صفحة الهبوط", variant: "destructive" });
+    onError: (error: any) => {
+      toast({ 
+        title: "خطأ", 
+        description: error.message || "فشل في حذف صفحة الهبوط", 
+        variant: "destructive" 
+      });
     },
   });
 }
@@ -135,30 +193,48 @@ export function useDuplicateLandingPage() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, user_id }: { id: string; user_id: string }) => {
-      const pages = getPagesFromStorage();
-      const original = pages.find(p => p.id === id);
-      if (!original) throw new Error("Page not found");
+    mutationFn: async ({ id, user_id }: { id: string; user_id?: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("غير مصرح");
 
-      const newPage: LandingPageData = {
-        ...original,
-        id: crypto.randomUUID(),
-        name: `${original.name} (نسخة)`,
-        user_id,
-        is_published: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      pages.unshift(newPage);
-      savePagesToStorage(pages);
-      return newPage;
+      // Get original page
+      const { data: original, error: fetchError } = await supabase
+        .from("landing_pages")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Create copy
+      const { data, error } = await supabase
+        .from("landing_pages")
+        .insert({
+          user_id: user_id || user.id,
+          title: `${original.title} (نسخة)`,
+          slug: `${original.slug}-copy-${Date.now()}`,
+          description: original.description,
+          template_id: original.template_id,
+          content: original.content,
+          settings: original.settings,
+          is_published: false,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return transformPage(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["landing-pages"] });
       toast({ title: "تم النسخ", description: "تم نسخ صفحة الهبوط بنجاح" });
     },
-    onError: () => {
-      toast({ title: "خطأ", description: "فشل في نسخ صفحة الهبوط", variant: "destructive" });
+    onError: (error: any) => {
+      toast({ 
+        title: "خطأ", 
+        description: error.message || "فشل في نسخ صفحة الهبوط", 
+        variant: "destructive" 
+      });
     },
   });
 }

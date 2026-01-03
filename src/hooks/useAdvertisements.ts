@@ -1,16 +1,24 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { useAdPackages, AdPackage } from "./useAdPackages";
 
-// Re-export AdPackage types for backward compatibility
 export interface Advertisement {
   id: string;
+  request_id: string | null;
   title: string;
   description: string | null;
   image_url: string | null;
   link_url: string | null;
-  status: string;
+  position: string;
+  priority: number;
+  impressions_count: number;
+  clicks_count: number;
+  views_count: number; // Alias for impressions_count
+  start_date: string;
+  end_date: string;
+  is_active: boolean;
+  is_featured: boolean; // Based on priority
+  advertiser_name: string; // Default value
   created_at: string;
   updated_at: string;
 }
@@ -18,35 +26,51 @@ export interface Advertisement {
 export interface AdPricing {
   id: string;
   name: string;
-  ad_type: string;
+  description: string | null;
   price: number;
   duration_days: number;
-  description: string | null;
-  features: string[] | null;
-  is_popular: boolean;
+  features: any[];
   is_active: boolean;
+  is_popular: boolean; // Based on display_order
+  ad_type: string; // Default value
+  display_order: number;
   created_at: string;
   updated_at: string;
 }
 
-// Use ad_requests table for active advertisements
+const transformAd = (data: any): Advertisement => ({
+  ...data,
+  views_count: data.impressions_count || 0,
+  is_featured: (data.priority || 0) > 5,
+  advertiser_name: 'معلن',
+});
+
+const transformPricing = (data: any): AdPricing => ({
+  ...data,
+  is_popular: data.display_order === 2,
+  ad_type: 'standard',
+});
+
+// Get active advertisements for display
 export function useActiveAdvertisements() {
   return useQuery({
     queryKey: ["advertisements", "active"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("ad_requests")
-        .select("*, ad_packages(*)")
-        .eq("status", "active")
-        .order("created_at", { ascending: false });
+        .from("advertisements")
+        .select("*")
+        .eq("is_active", true)
+        .gte("end_date", new Date().toISOString().split('T')[0])
+        .lte("start_date", new Date().toISOString().split('T')[0])
+        .order("priority", { ascending: false });
 
       if (error) throw error;
-      return data as any[];
+      return (data || []).map(transformAd) as Advertisement[];
     },
   });
 }
 
-// Use ad_packages table for pricing
+// Get ad pricing packages
 export function useAdPricing() {
   return useQuery({
     queryKey: ["ad_pricing"],
@@ -55,27 +79,15 @@ export function useAdPricing() {
         .from("ad_packages")
         .select("*")
         .eq("is_active", true)
-        .order("price", { ascending: true });
+        .order("display_order", { ascending: true });
 
       if (error) throw error;
-      // Map to old format for compatibility
-      return (data || []).map((pkg: any) => ({
-        id: pkg.id,
-        name: pkg.name,
-        ad_type: "standard",
-        price: pkg.price,
-        duration_days: pkg.duration_days,
-        description: pkg.description,
-        features: pkg.features,
-        is_popular: false,
-        is_active: pkg.is_active,
-        created_at: pkg.created_at,
-        updated_at: pkg.updated_at,
-      })) as AdPricing[];
+      return (data || []).map(transformPricing) as AdPricing[];
     },
   });
 }
 
+// Submit advertisement request
 export function useSubmitAdvertisement() {
   const queryClient = useQueryClient();
 
@@ -85,15 +97,16 @@ export function useSubmitAdvertisement() {
       description?: string;
       image_url?: string;
       link_url?: string;
-      advertiser_name?: string;
-      advertiser_email?: string;
-      advertiser_phone?: string;
+      package_id?: string;
       ad_type?: string;
       price?: number;
       duration_days?: number;
+      advertiser_name?: string;
+      advertiser_email?: string;
+      advertiser_phone?: string;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!user) throw new Error("يرجى تسجيل الدخول أولاً");
 
       const { data, error } = await supabase
         .from("ad_requests")
@@ -102,6 +115,7 @@ export function useSubmitAdvertisement() {
           description: adData.description,
           image_url: adData.image_url,
           link_url: adData.link_url,
+          package_id: adData.package_id,
           user_id: user.id,
           status: "pending",
         })
@@ -112,38 +126,58 @@ export function useSubmitAdvertisement() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["advertisements"] });
       queryClient.invalidateQueries({ queryKey: ["my-ad-requests"] });
       toast({
         title: "تم إرسال طلب الإعلان",
         description: "سيتم مراجعة إعلانك والتواصل معك قريباً",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "خطأ",
-        description: "حدث خطأ أثناء إرسال الإعلان",
+        description: error.message || "حدث خطأ أثناء إرسال الإعلان",
         variant: "destructive",
       });
-      console.error("Error submitting ad:", error);
     },
   });
 }
 
+// Increment ad view count
 export function useIncrementAdView() {
   return useMutation({
     mutationFn: async (adId: string) => {
-      // No-op for now - views tracking not implemented
-      console.log("View increment for ad:", adId);
+      const { data: ad } = await supabase
+        .from("advertisements")
+        .select("impressions_count")
+        .eq("id", adId)
+        .single();
+
+      if (ad) {
+        await supabase
+          .from("advertisements")
+          .update({ impressions_count: (ad.impressions_count || 0) + 1 })
+          .eq("id", adId);
+      }
     },
   });
 }
 
+// Increment ad click count
 export function useIncrementAdClick() {
   return useMutation({
     mutationFn: async (adId: string) => {
-      // No-op for now - clicks tracking not implemented
-      console.log("Click increment for ad:", adId);
+      const { data: ad } = await supabase
+        .from("advertisements")
+        .select("clicks_count")
+        .eq("id", adId)
+        .single();
+
+      if (ad) {
+        await supabase
+          .from("advertisements")
+          .update({ clicks_count: (ad.clicks_count || 0) + 1 })
+          .eq("id", adId);
+      }
     },
   });
 }

@@ -1,6 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Check, Zap, AlertTriangle } from "lucide-react";
 import { useSubscriptionPlans, SubscriptionPlan } from "@/hooks/useSubscription";
 import { useNavigate } from "react-router-dom";
@@ -45,11 +44,6 @@ export function UpgradeModal({
   };
 
   const availablePlans = plans?.filter(p => p.id !== currentPlanId && p.is_active) || [];
-
-  const formatLimit = (value: number | null) => {
-    if (value === null) return "غير محدود";
-    return value.toLocaleString("ar-SA");
-  };
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -97,8 +91,11 @@ export function UpgradeModal({
 }
 
 function PlanCard({ plan, onSelect }: { plan: SubscriptionPlan; onSelect: () => void }) {
-  const formatLimit = (value: number | null) => {
-    if (value === null) return "∞";
+  const limits = (plan.limits || {}) as Record<string, number>;
+  const features = Array.isArray(plan.features) ? plan.features : [];
+
+  const formatLimit = (value: number | undefined | null) => {
+    if (value === undefined || value === null || value === -1) return "∞";
     return value.toLocaleString("ar-SA");
   };
 
@@ -107,42 +104,30 @@ function PlanCard({ plan, onSelect }: { plan: SubscriptionPlan; onSelect: () => 
       <div className="text-center mb-4">
         <h3 className="font-bold text-lg">{plan.name}</h3>
         <div className="mt-2">
-          <span className="text-3xl font-bold">${plan.monthly_price}</span>
-          <span className="text-muted-foreground">/شهر</span>
+          <span className="text-3xl font-bold">${plan.price}</span>
+          <span className="text-muted-foreground">/{plan.billing_period === 'yearly' ? 'سنة' : 'شهر'}</span>
         </div>
       </div>
 
       <ul className="space-y-2 text-sm mb-4">
         <li className="flex items-center gap-2">
           <Check className="w-4 h-4 text-primary" />
-          <span>{formatLimit(plan.email_limit_per_month)} رسالة/شهر</span>
+          <span>{formatLimit(limits.emails_per_month)} رسالة/شهر</span>
         </li>
         <li className="flex items-center gap-2">
           <Check className="w-4 h-4 text-primary" />
-          <span>{formatLimit(plan.subscriber_limit)} مشترك</span>
+          <span>{formatLimit(limits.subscribers)} مشترك</span>
         </li>
         <li className="flex items-center gap-2">
           <Check className="w-4 h-4 text-primary" />
-          <span>{formatLimit(plan.landing_page_limit)} صفحة هبوط</span>
+          <span>{formatLimit(limits.landing_pages)} صفحة هبوط</span>
         </li>
-        {plan.advanced_analytics && (
-          <li className="flex items-center gap-2">
+        {features.slice(0, 3).map((feature, i) => (
+          <li key={i} className="flex items-center gap-2">
             <Check className="w-4 h-4 text-primary" />
-            <span>تحليلات متقدمة</span>
+            <span>{feature}</span>
           </li>
-        )}
-        {plan.custom_domain && (
-          <li className="flex items-center gap-2">
-            <Check className="w-4 h-4 text-primary" />
-            <span>نطاق مخصص</span>
-          </li>
-        )}
-        {plan.api_access && (
-          <li className="flex items-center gap-2">
-            <Check className="w-4 h-4 text-primary" />
-            <span>وصول API</span>
-          </li>
-        )}
+        ))}
       </ul>
 
       <Button className="w-full" onClick={onSelect}>
