@@ -58,29 +58,29 @@ export function CurrentPlanCard() {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 sm:p-6">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
             <Crown className="w-5 h-5 text-primary" />
           </div>
-          <div>
-            <CardTitle className="text-lg">{plan?.name || 'مجاني'}</CardTitle>
-            <div className="flex items-center gap-2 mt-1">
-              <Badge variant="secondary">{subscription.status === "active" ? "نشط" : "غير نشط"}</Badge>
-              <span className="text-sm text-muted-foreground">
+          <div className="min-w-0">
+            <CardTitle className="text-base sm:text-lg truncate">{plan?.name || 'مجاني'}</CardTitle>
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              <Badge variant="secondary" className="text-xs">{subscription.status === "active" ? "نشط" : "غير نشط"}</Badge>
+              <span className="text-xs sm:text-sm text-muted-foreground">
                 ${plan?.price || 0}/{plan?.billing_period === 'yearly' ? 'سنة' : 'شهر'}
               </span>
             </div>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={() => navigate("/dashboard/settings?tab=billing")}>
+        <Button variant="outline" size="sm" onClick={() => navigate("/dashboard/settings?tab=billing")} className="w-full sm:w-auto text-xs sm:text-sm">
           إدارة الاشتراك
         </Button>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Calendar className="w-4 h-4" />
-          <span>
+      <CardContent className="space-y-4 p-4 sm:p-6 pt-0">
+        <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+          <Calendar className="w-4 h-4 flex-shrink-0" />
+          <span className="truncate">
             بداية الاشتراك: {format(new Date(subscription.current_period_start), "d MMMM yyyy", { locale: ar })}
           </span>
         </div>

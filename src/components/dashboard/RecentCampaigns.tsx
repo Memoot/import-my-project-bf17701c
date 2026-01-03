@@ -81,40 +81,40 @@ const getStatusColor = (status: string) => {
 export function RecentCampaigns() {
   return (
     <Card className="bg-card">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-lg font-semibold">آخر الحملات</CardTitle>
-        <Button variant="ghost" size="sm" className="text-primary">
+      <CardHeader className="flex flex-row items-center justify-between p-4 sm:p-6">
+        <CardTitle className="text-base sm:text-lg font-semibold">آخر الحملات</CardTitle>
+        <Button variant="ghost" size="sm" className="text-primary text-xs sm:text-sm">
           عرض الكل
         </Button>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
+      <CardContent className="p-4 sm:p-6 pt-0">
+        <div className="space-y-3 sm:space-y-4">
           {campaigns.map((campaign) => (
             <div
               key={campaign.id}
-              className="flex items-center justify-between p-4 rounded-lg bg-background hover:bg-muted/50 transition-colors"
+              className="flex items-start sm:items-center justify-between p-3 sm:p-4 rounded-lg bg-background hover:bg-muted/50 transition-colors gap-2"
             >
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3">
-                  <h4 className="font-medium text-foreground truncate">{campaign.name}</h4>
-                  <Badge className={getStatusColor(campaign.status)} variant="outline">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                  <h4 className="font-medium text-foreground text-sm sm:text-base truncate max-w-[150px] sm:max-w-none">{campaign.name}</h4>
+                  <Badge className={`${getStatusColor(campaign.status)} text-xs`} variant="outline">
                     {campaign.status}
                   </Badge>
                 </div>
-                <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2 text-xs sm:text-sm text-muted-foreground">
                   <span>مرسلة: {campaign.sent.toLocaleString('ar-EG')}</span>
-                  <span>مفتوحة: {campaign.opened.toLocaleString('ar-EG')}</span>
-                  <span>نقرات: {campaign.clicked.toLocaleString('ar-EG')}</span>
+                  <span className="hidden xs:inline">مفتوحة: {campaign.opened.toLocaleString('ar-EG')}</span>
+                  <span className="hidden sm:inline">نقرات: {campaign.clicked.toLocaleString('ar-EG')}</span>
                 </div>
               </div>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" size="icon" className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10">
                     <MoreHorizontal className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="bg-popover">
                   <DropdownMenuItem>
                     <Eye className="w-4 h-4 ml-2" />
                     عرض
