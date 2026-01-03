@@ -38,7 +38,7 @@ const menuItems = [
   { title: "نظرة عامة", url: "/dashboard", icon: LayoutDashboard },
   { title: "الحملات", url: "/dashboard/campaigns", icon: Mail },
   { title: "صفحات الهبوط", url: "/dashboard/landing-pages", icon: Layout },
-  { title: "توليد الصور بالذكاء", url: "/dashboard/ai-images", icon: Sparkles },
+  { title: "أدوات الذكاء الاصطناعي", url: "/dashboard/ai-tools", icon: Sparkles },
   { title: "المشتركين", url: "/dashboard/subscribers", icon: Users },
   { title: "الرسائل المرسلة", url: "/dashboard/sent", icon: Send },
   { title: "البريد الوارد", url: "/dashboard/inbox", icon: Inbox },
