@@ -14,11 +14,11 @@ const data = [
 export function SubscribersChart() {
   return (
     <Card className="bg-card">
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold">نمو المشتركين</CardTitle>
+      <CardHeader className="p-4 sm:p-6">
+        <CardTitle className="text-base sm:text-lg font-semibold">نمو المشتركين</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="h-[300px]">
+      <CardContent className="p-4 sm:p-6 pt-0">
+        <div className="h-[250px] sm:h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data}>
               <defs>
