@@ -91,7 +91,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 // مكونات المحرر الجديدة
-import { ElementToolbar } from "@/components/landing-page/editor/ElementToolbar";
+import { ElementsPanel } from "@/components/landing-page/editor/ElementsPanel";
 import { StyleEditor } from "@/components/landing-page/editor/StyleEditor";
 import { SectionBackgroundEditor } from "@/components/landing-page/editor/SectionBackgroundEditor";
 import { LayersPanel } from "@/components/landing-page/editor/LayersPanel";
@@ -848,9 +848,7 @@ export default function LandingPageEditorPage() {
         </TabsContent>
 
         <TabsContent value="elements" className="flex-1 overflow-hidden m-0">
-          <ScrollArea className="h-full">
-            <ElementToolbar onAddElement={addElement} />
-          </ScrollArea>
+          <ElementsPanel onAddElement={addElement} />
         </TabsContent>
 
         <TabsContent value="layers" className="flex-1 overflow-hidden m-0">
