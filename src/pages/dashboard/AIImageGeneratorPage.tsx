@@ -57,23 +57,51 @@ export default function AIImageGeneratorPage() {
         body: { prompt, style },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Supabase Functions errors can include response context
+        const status: number | undefined =
+          (error as any)?.context?.status ?? (error as any)?.status;
 
-      if (data.image) {
+        let description = (error as any)?.message || "فشل في توليد الصورة";
+
+        if (status === 401) description = "يرجى تسجيل الدخول أولاً";
+        if (status === 429) description = "تم تجاوز الحد المسموح، جرّب لاحقاً";
+        if (status === 402) description = "يرجى إضافة رصيد للمتابعة";
+
+        // Try to extract backend JSON error message if available
+        const backendError = (error as any)?.context?.body;
+        if (typeof backendError === "string") {
+          try {
+            const parsed = JSON.parse(backendError);
+            if (parsed?.error) description = parsed.error;
+          } catch {
+            // ignore
+          }
+        }
+
+        throw new Error(description);
+      }
+
+      if (data?.image) {
         setGeneratedImage(data.image);
-        setHistory(prev => [{ prompt, image: data.image }, ...prev.slice(0, 9)]);
+        setHistory((prev) => [{ prompt, image: data.image }, ...prev.slice(0, 9)]);
         toast({
           title: "تم!",
           description: "تم توليد الصورة بنجاح",
         });
-      } else if (data.error) {
+        return;
+      }
+
+      if (data?.error) {
         throw new Error(data.error);
       }
-    } catch (error: any) {
-      console.error("Error generating image:", error);
+
+      throw new Error("لم يتم توليد صورة، حاول مرة أخرى");
+    } catch (err: any) {
+      console.error("Error generating image:", err);
       toast({
         title: "خطأ",
-        description: error.message || "فشل في توليد الصورة",
+        description: err?.message || "فشل في توليد الصورة",
         variant: "destructive",
       });
     } finally {
