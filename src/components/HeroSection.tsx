@@ -1,83 +1,110 @@
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Play, Sparkles, Users, Mail, TrendingUp } from "lucide-react";
+import { ArrowLeft, Play, Sparkles, Users, Mail, TrendingUp, Check, Star } from "lucide-react";
+import { Link } from "react-router-dom";
 import heroDashboard from "@/assets/hero-dashboard.png";
 
 const HeroSection = () => {
   return (
-    <section id="home" className="relative min-h-screen bg-hero-gradient overflow-hidden pt-16">
-      {/* Background Elements */}
+    <section id="home" className="relative min-h-screen bg-hero-gradient overflow-hidden pt-20">
+      {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse-slow" />
-        <div className="absolute bottom-1/4 left-1/4 w-80 h-80 bg-secondary/20 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: "2s" }} />
-        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-accent/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: "4s" }} />
+        <div className="absolute top-1/4 right-1/4 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[100px] animate-pulse-slow" />
+        <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-secondary/20 rounded-full blur-[100px] animate-pulse-slow" style={{ animationDelay: "2s" }} />
+        <div className="absolute top-1/2 left-1/2 w-[300px] h-[300px] bg-accent/10 rounded-full blur-[80px] animate-pulse-slow" style={{ animationDelay: "4s" }} />
+        
+        {/* Floating Particles */}
+        <div className="absolute top-1/3 right-1/3 w-2 h-2 bg-secondary rounded-full animate-bounce-gentle" />
+        <div className="absolute top-2/3 left-1/4 w-3 h-3 bg-primary rounded-full animate-bounce-gentle" style={{ animationDelay: "1s" }} />
+        <div className="absolute bottom-1/3 right-1/4 w-2 h-2 bg-accent rounded-full animate-bounce-gentle" style={{ animationDelay: "0.5s" }} />
       </div>
 
       {/* Grid Pattern */}
-      <div className="absolute inset-0 opacity-5">
+      <div className="absolute inset-0 opacity-[0.03]">
         <div className="w-full h-full" style={{
           backgroundImage: `linear-gradient(hsl(var(--primary-foreground)) 1px, transparent 1px),
                             linear-gradient(90deg, hsl(var(--primary-foreground)) 1px, transparent 1px)`,
-          backgroundSize: "50px 50px"
+          backgroundSize: "60px 60px"
         }} />
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-12 py-20">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-16 py-16 lg:py-24">
           {/* Content */}
           <div className="flex-1 text-center lg:text-right max-w-2xl">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 bg-glass px-4 py-2 rounded-full mb-6 animate-fade-in">
-              <Sparkles className="w-4 h-4 text-secondary" />
-              <span className="text-sm text-primary-foreground/90">منصة التسويق الأولى عربياً</span>
+            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-5 py-2.5 rounded-full mb-8 border border-white/10 animate-fade-in-up">
+              <div className="flex items-center gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
+                ))}
+              </div>
+              <span className="text-sm text-primary-foreground/90 font-medium">+10,000 عميل سعيد</span>
             </div>
 
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-primary-foreground mb-6 leading-tight animate-slide-up">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-primary-foreground mb-8 leading-[1.1] animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
               ارفع مبيعاتك مع
-              <span className="block text-gradient mt-2">حملات البريد الذكية</span>
+              <span className="block mt-3 bg-gradient-to-r from-secondary via-yellow-400 to-secondary bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient-x">
+                حملات البريد الذكية
+              </span>
             </h1>
 
-            <p className="text-lg md:text-xl text-primary-foreground/70 mb-8 leading-relaxed animate-slide-up" style={{ animationDelay: "0.2s" }}>
+            <p className="text-lg md:text-xl text-primary-foreground/70 mb-10 leading-relaxed animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
               أدوات تسويق متقدمة بالذكاء الاصطناعي لإنشاء وإرسال وتتبع حملات البريد الإلكتروني. 
               وصّل رسالتك لآلاف العملاء بضغطة زر واحدة.
             </p>
 
+            {/* Features List */}
+            <div className="flex flex-wrap justify-center lg:justify-start gap-4 mb-10 animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
+              {["إنشاء بالذكاء الاصطناعي", "تحليلات متقدمة", "دعم عربي كامل"].map((feature) => (
+                <div key={feature} className="flex items-center gap-2 text-primary-foreground/80 text-sm">
+                  <div className="w-5 h-5 rounded-full bg-secondary/20 flex items-center justify-center">
+                    <Check className="w-3 h-3 text-secondary" />
+                  </div>
+                  {feature}
+                </div>
+              ))}
+            </div>
+
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12 animate-slide-up" style={{ animationDelay: "0.4s" }}>
-              <a href="/dashboard">
-                <Button variant="hero" size="xl" className="group">
-                  ابدأ تجربتك المجانية
-                  <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-14 animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
+              <Link to="/dashboard">
+                <Button 
+                  size="xl" 
+                  className="group relative overflow-hidden bg-gradient-to-r from-secondary to-secondary/80 hover:from-secondary/90 hover:to-secondary/70 text-secondary-foreground font-bold shadow-xl hover:shadow-2xl transition-all duration-300 rounded-2xl px-8"
+                >
+                  <span className="relative z-10 flex items-center gap-2">
+                    ابدأ تجربتك المجانية
+                    <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                  </span>
                 </Button>
-              </a>
-              <Button variant="glass" size="xl" className="group">
-                <Play className="w-5 h-5" />
+              </Link>
+              <Button 
+                variant="ghost" 
+                size="xl" 
+                className="group border border-white/20 bg-white/5 hover:bg-white/10 text-primary-foreground rounded-2xl backdrop-blur-sm"
+              >
+                <Play className="w-5 h-5 ml-2" />
                 شاهد العرض التوضيحي
               </Button>
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-6 animate-slide-up" style={{ animationDelay: "0.6s" }}>
-              <div className="text-center lg:text-right">
-                <div className="flex items-center justify-center lg:justify-start gap-2 text-secondary mb-1">
-                  <Users className="w-5 h-5" />
-                  <span className="text-2xl font-bold text-primary-foreground">+10K</span>
+            <div className="grid grid-cols-3 gap-8 animate-fade-in-up" style={{ animationDelay: "0.5s" }}>
+              {[
+                { icon: Users, value: "+10K", label: "عميل سعيد" },
+                { icon: Mail, value: "+50M", label: "رسالة مُرسلة" },
+                { icon: TrendingUp, value: "95%", label: "معدل الوصول" },
+              ].map((stat) => (
+                <div key={stat.label} className="text-center lg:text-right group">
+                  <div className="flex items-center justify-center lg:justify-start gap-2 mb-2">
+                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
+                      <stat.icon className="w-5 h-5 text-secondary" />
+                    </div>
+                    <span className="text-2xl lg:text-3xl font-bold text-primary-foreground">{stat.value}</span>
+                  </div>
+                  <p className="text-sm text-primary-foreground/60">{stat.label}</p>
                 </div>
-                <p className="text-sm text-primary-foreground/60">عميل سعيد</p>
-              </div>
-              <div className="text-center lg:text-right">
-                <div className="flex items-center justify-center lg:justify-start gap-2 text-secondary mb-1">
-                  <Mail className="w-5 h-5" />
-                  <span className="text-2xl font-bold text-primary-foreground">+50M</span>
-                </div>
-                <p className="text-sm text-primary-foreground/60">رسالة مُرسلة</p>
-              </div>
-              <div className="text-center lg:text-right">
-                <div className="flex items-center justify-center lg:justify-start gap-2 text-secondary mb-1">
-                  <TrendingUp className="w-5 h-5" />
-                  <span className="text-2xl font-bold text-primary-foreground">95%</span>
-                </div>
-                <p className="text-sm text-primary-foreground/60">معدل الوصول</p>
-              </div>
+              ))}
             </div>
           </div>
 
@@ -85,40 +112,45 @@ const HeroSection = () => {
           <div className="flex-1 w-full max-w-xl lg:max-w-2xl animate-float">
             <div className="relative">
               {/* Glow Effect */}
-              <div className="absolute -inset-4 bg-gradient-to-r from-primary/30 to-secondary/30 rounded-3xl blur-2xl" />
+              <div className="absolute -inset-8 bg-gradient-to-r from-primary/40 via-secondary/30 to-primary/40 rounded-3xl blur-3xl animate-pulse-slow" />
               
-              {/* Dashboard Image */}
-              <div className="relative bg-glass rounded-2xl p-2 shadow-2xl">
+              {/* Main Dashboard */}
+              <div className="relative bg-white/10 backdrop-blur-md rounded-3xl p-3 shadow-2xl border border-white/10">
                 <img
                   src={heroDashboard}
-                  alt="لوحة تحكم رسائل برو"
-                  className="w-full h-auto rounded-xl"
+                  alt="لوحة تحكم ماركيتلي"
+                  className="w-full h-auto rounded-2xl"
                 />
               </div>
 
               {/* Floating Cards */}
-              <div className="absolute -top-6 -right-6 bg-card p-4 rounded-xl shadow-lg animate-slide-up" style={{ animationDelay: "0.8s" }}>
+              <div className="absolute -top-8 -right-8 bg-card p-4 rounded-2xl shadow-2xl animate-slide-in-right border border-border" style={{ animationDelay: "0.6s" }}>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-accent-gradient rounded-lg flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 text-secondary-foreground" />
+                  <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-500 rounded-xl flex items-center justify-center shadow-lg">
+                    <TrendingUp className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">معدل الفتح</p>
-                    <p className="font-bold text-foreground">+45%</p>
+                    <p className="text-xl font-bold text-foreground">+45%</p>
                   </div>
                 </div>
               </div>
 
-              <div className="absolute -bottom-4 -left-4 bg-card p-4 rounded-xl shadow-lg animate-slide-up" style={{ animationDelay: "1s" }}>
+              <div className="absolute -bottom-6 -left-6 bg-card p-4 rounded-2xl shadow-2xl animate-slide-in-left border border-border" style={{ animationDelay: "0.8s" }}>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary-gradient rounded-lg flex items-center justify-center">
-                    <Mail className="w-5 h-5 text-primary-foreground" />
+                  <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary-glow rounded-xl flex items-center justify-center shadow-lg">
+                    <Mail className="w-6 h-6 text-primary-foreground" />
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">رسائل اليوم</p>
-                    <p className="font-bold text-foreground">12,450</p>
+                    <p className="text-xl font-bold text-foreground">12,450</p>
                   </div>
                 </div>
+              </div>
+
+              {/* Success Badge */}
+              <div className="absolute top-1/2 -left-4 bg-green-500 text-white px-4 py-2 rounded-full shadow-lg animate-bounce-gentle text-sm font-medium">
+                ✓ تم الإرسال بنجاح
               </div>
             </div>
           </div>
