@@ -100,6 +100,9 @@ export default function AIImageGeneratorPage() {
     try {
       const { data, error } = await supabase.functions.invoke("generate-image", {
         body: { prompt, style },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
 
       if (error) {
