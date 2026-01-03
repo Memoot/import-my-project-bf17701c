@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
   Select,
   SelectContent,
@@ -57,6 +58,9 @@ import {
   Type,
   ZoomIn,
   ZoomOut,
+  Menu,
+  PanelRightClose,
+  PanelLeftClose,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, useParams } from "react-router-dom";
@@ -66,6 +70,25 @@ import { LandingPageRenderer } from "@/components/landing-page/LandingPageRender
 import { useCreateLandingPage, useUpdateLandingPage, useLandingPage } from "@/hooks/useLandingPages";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 // مكونات المحرر الجديدة
 import { ElementToolbar } from "@/components/landing-page/editor/ElementToolbar";
@@ -108,6 +131,98 @@ const getPageTypeIcon = (type: string) => {
   }
 };
 
+// مكون قسم قابل للسحب
+function SortableSectionItem({
+  section,
+  index,
+  isActive,
+  onSelect,
+  onMoveUp,
+  onMoveDown,
+  onDelete,
+  isFirst,
+  isLast,
+}: {
+  section: LandingPageSection;
+  index: number;
+  isActive: boolean;
+  onSelect: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onDelete: () => void;
+  isFirst: boolean;
+  isLast: boolean;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: section.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const Icon = getSectionIcon(section.type);
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors",
+        isActive 
+          ? 'border-primary bg-primary/5' 
+          : 'border-border hover:border-primary/50'
+      )}
+      onClick={onSelect}
+    >
+      <button
+        className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded touch-none"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="w-4 h-4 text-muted-foreground" />
+      </button>
+      <Icon className="w-4 h-4 text-primary flex-shrink-0" />
+      <span className="text-sm flex-1 truncate">{section.title}</span>
+      <div className="flex items-center gap-0.5 flex-shrink-0">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-6 w-6"
+          onClick={(e) => { e.stopPropagation(); onMoveUp(); }}
+          disabled={isFirst}
+        >
+          <ArrowUp className="w-3 h-3" />
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-6 w-6"
+          onClick={(e) => { e.stopPropagation(); onMoveDown(); }}
+          disabled={isLast}
+        >
+          <ArrowDown className="w-3 h-3" />
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-6 w-6 text-destructive"
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+        >
+          <Trash2 className="w-3 h-3" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function LandingPageEditorPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -128,6 +243,21 @@ export default function LandingPageEditorPage() {
   const [zoom, setZoom] = useState(100);
   const [activeTab, setActiveTab] = useState<'sections' | 'elements' | 'layers'>('sections');
   const [rightPanelTab, setRightPanelTab] = useState<'properties' | 'style' | 'background'>('properties');
+  const [leftPanelOpen, setLeftPanelOpen] = useState(false);
+  const [rightPanelOpen, setRightPanelOpen] = useState(false);
+  const [draggingSection, setDraggingSection] = useState<LandingPageSection | null>(null);
+
+  // Sensors for drag and drop
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // استخدام hook العناصر
   const {
@@ -472,6 +602,33 @@ export default function LandingPageEditorPage() {
     mobile: 'w-[375px]'
   };
 
+  // Handle section drag end
+  const handleSectionDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setDraggingSection(null);
+
+    if (over && active.id !== over.id && currentPage) {
+      const oldIndex = currentPage.sections.findIndex((s) => s.id === active.id);
+      const newIndex = currentPage.sections.findIndex((s) => s.id === over.id);
+      
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newSections = arrayMove(currentPage.sections, oldIndex, newIndex);
+        newSections.forEach((s, i) => { s.order = i + 1; });
+        
+        setPages(prev => prev.map(p => 
+          p.id === activePage ? { ...p, sections: newSections } : p
+        ));
+      }
+    }
+  };
+
+  const handleSectionDragStart = (event: DragStartEvent) => {
+    const section = currentPage?.sections.find(s => s.id === event.active.id);
+    if (section) {
+      setDraggingSection(section);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -480,32 +637,334 @@ export default function LandingPageEditorPage() {
     );
   }
 
+  // Left panel content component
+  const LeftPanelContent = () => (
+    <>
+      {/* Pages */}
+      <div className="p-3 border-b">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium">الصفحات</span>
+          <div className="flex gap-1">
+            <Dialog open={showAddAutoPage} onOpenChange={setShowAddAutoPage}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7" title="صفحات تلقائية">
+                  <Star className="w-4 h-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>إضافة صفحة تلقائية</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-3 pt-4">
+                  {AUTOMATIC_PAGES.map((page) => {
+                    const Icon = getPageTypeIcon(page.type);
+                    return (
+                      <Button
+                        key={page.type}
+                        variant="outline"
+                        className="h-auto py-4 justify-start gap-3"
+                        onClick={() => handleAddAutoPage(page.type)}
+                      >
+                        <Icon className="w-6 h-6 text-primary" />
+                        <div className="text-right">
+                          <p className="font-medium">{page.label}</p>
+                          <p className="text-xs text-muted-foreground">{page.description}</p>
+                        </div>
+                      </Button>
+                    );
+                  })}
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={showAddPage} onOpenChange={setShowAddPage}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7">
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>إضافة صفحة جديدة</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <div className="space-y-2">
+                    <Label>اسم الصفحة</Label>
+                    <Input 
+                      value={newPageName}
+                      onChange={(e) => setNewPageName(e.target.value)}
+                      placeholder="مثال: صفحة الشكر"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>نوع الصفحة</Label>
+                    <Select value={newPageType} onValueChange={(v: LandingPage['type']) => setNewPageType(v)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PAGE_TYPES.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button className="w-full bg-primary-gradient" onClick={handleAddPage}>
+                    إضافة الصفحة
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+        <ScrollArea className="h-24">
+          <div className="space-y-1">
+            {pages.map((page) => {
+              const PageIcon = getPageTypeIcon(page.type);
+              return (
+                <div
+                  key={page.id}
+                  className={cn(
+                    "flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors group",
+                    activePage === page.id ? 'bg-primary/10 text-primary' : 'hover:bg-muted'
+                  )}
+                  onClick={() => { setActivePage(page.id); setActiveSection(null); setLeftPanelOpen(false); }}
+                >
+                  <div className="flex items-center gap-2">
+                    <PageIcon className="w-4 h-4" />
+                    <span className="text-sm truncate">{page.name}</span>
+                  </div>
+                  {pages.length > 1 && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                      onClick={(e) => { e.stopPropagation(); handleDeletePage(page.id); }}
+                    >
+                      <Trash2 className="w-3 h-3 text-destructive" />
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </ScrollArea>
+      </div>
+
+      {/* Tabs: Sections / Elements / Layers */}
+      <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="flex-1 flex flex-col overflow-hidden">
+        <TabsList className="w-full grid grid-cols-3 mx-3 mt-2" style={{ width: 'calc(100% - 24px)' }}>
+          <TabsTrigger value="sections" className="text-xs">الأقسام</TabsTrigger>
+          <TabsTrigger value="elements" className="text-xs">العناصر</TabsTrigger>
+          <TabsTrigger value="layers" className="text-xs">الطبقات</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="sections" className="flex-1 overflow-hidden m-0">
+          <ScrollArea className="h-full">
+            <div className="p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">أقسام الصفحة</span>
+                <Dialog open={showAddSection} onOpenChange={setShowAddSection}>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-7 w-7">
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>اختر نوع القسم</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-4">
+                      {sectionTypes.map((section) => {
+                        const Icon = getSectionIcon(section.type);
+                        return (
+                          <Button
+                            key={section.type}
+                            variant="outline"
+                            className="h-auto py-4 flex flex-col gap-2"
+                            onClick={() => handleAddSection(section.type as LandingPageSection['type'])}
+                          >
+                            <Icon className="w-6 h-6 text-primary" />
+                            <span className="text-sm">{section.label}</span>
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              {currentPage?.sections.length === 0 ? (
+                <div className="text-center py-8">
+                  <Layout className="w-10 h-10 mx-auto mb-3 text-muted-foreground opacity-50" />
+                  <p className="text-sm text-muted-foreground mb-3">لا توجد أقسام</p>
+                  <Button size="sm" onClick={() => setShowAddSection(true)}>
+                    <Plus className="w-4 h-4 ml-1" />
+                    إضافة قسم
+                  </Button>
+                </div>
+              ) : (
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragStart={handleSectionDragStart}
+                  onDragEnd={handleSectionDragEnd}
+                >
+                  <SortableContext
+                    items={currentPage?.sections.map(s => s.id) || []}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-2">
+                      {currentPage?.sections.map((section, index) => (
+                        <SortableSectionItem
+                          key={section.id}
+                          section={section}
+                          index={index}
+                          isActive={activeSection === section.id}
+                          onSelect={() => { setActiveSection(section.id); setLeftPanelOpen(false); }}
+                          onMoveUp={() => handleMoveSection(section.id, 'up')}
+                          onMoveDown={() => handleMoveSection(section.id, 'down')}
+                          onDelete={() => handleDeleteSection(section.id)}
+                          isFirst={index === 0}
+                          isLast={index === (currentPage?.sections.length || 0) - 1}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                  <DragOverlay>
+                    {draggingSection ? (
+                      <div className="flex items-center gap-2 p-2 rounded-lg border border-primary bg-primary/10 shadow-lg">
+                        <GripVertical className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm">{draggingSection.title}</span>
+                      </div>
+                    ) : null}
+                  </DragOverlay>
+                </DndContext>
+              )}
+            </div>
+          </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="elements" className="flex-1 overflow-hidden m-0">
+          <ScrollArea className="h-full">
+            <ElementToolbar onAddElement={addElement} />
+          </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="layers" className="flex-1 overflow-hidden m-0">
+          <ScrollArea className="h-full">
+            <LayersPanel
+              elements={elements}
+              selectedElementId={selectedElementId}
+              onSelectElement={setSelectedElementId}
+              onDeleteElement={deleteElement}
+              onDuplicateElement={duplicateElement}
+              onToggleVisibility={toggleVisibility}
+              onToggleLock={toggleLock}
+              onReorderElements={reorderElements}
+              onMoveLayer={moveLayer}
+            />
+          </ScrollArea>
+        </TabsContent>
+      </Tabs>
+
+      {/* Page Settings */}
+      <div className="p-3 border-t">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="w-full"
+          onClick={() => setShowSettings(!showSettings)}
+        >
+          <Palette className="w-4 h-4 ml-2" />
+          إعدادات الألوان
+        </Button>
+        {showSettings && currentPage && (
+          <div className="mt-3 space-y-3">
+            <div className="space-y-1">
+              <Label className="text-xs">اللون الرئيسي</Label>
+              <div className="flex gap-2">
+                <input 
+                  type="color" 
+                  value={currentPage.settings.primaryColor}
+                  onChange={(e) => updatePageSettings('primaryColor', e.target.value)}
+                  className="w-10 h-8 rounded cursor-pointer"
+                />
+                <Input 
+                  value={currentPage.settings.primaryColor}
+                  onChange={(e) => updatePageSettings('primaryColor', e.target.value)}
+                  className="h-8 text-xs"
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">اللون الثانوي</Label>
+              <div className="flex gap-2">
+                <input 
+                  type="color" 
+                  value={currentPage.settings.secondaryColor}
+                  onChange={(e) => updatePageSettings('secondaryColor', e.target.value)}
+                  className="w-10 h-8 rounded cursor-pointer"
+                />
+                <Input 
+                  value={currentPage.settings.secondaryColor}
+                  onChange={(e) => updatePageSettings('secondaryColor', e.target.value)}
+                  className="h-8 text-xs"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+
   return (
     <div className="min-h-screen bg-background flex w-full">
-      <DashboardSidebar />
+      {/* Hide sidebar on small screens in editor */}
+      <div className="hidden xl:block">
+        <DashboardSidebar />
+      </div>
       
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Bar */}
-        <div className="flex items-center justify-between p-3 border-b bg-card">
-          <div className="flex items-center gap-3">
+        {/* Top Bar - Responsive */}
+        <div className="flex items-center justify-between p-2 lg:p-3 border-b bg-card gap-2">
+          <div className="flex items-center gap-2">
+            {/* Mobile Left Panel Toggle */}
+            <Sheet open={leftPanelOpen} onOpenChange={setLeftPanelOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon" className="lg:hidden">
+                  <Menu className="w-4 h-4" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-80 p-0 overflow-y-auto">
+                <div className="flex flex-col h-full">
+                  <LeftPanelContent />
+                </div>
+              </SheetContent>
+            </Sheet>
+
             <Button 
               variant="ghost" 
               size="sm"
               onClick={() => navigate('/dashboard/landing-pages')}
+              className="hidden sm:flex"
             >
               <ArrowRight className="w-4 h-4 ml-1" />
-              العودة
+              <span className="hidden md:inline">العودة</span>
             </Button>
             <Input 
               value={projectName}
               onChange={(e) => setProjectName(e.target.value)}
-              className="w-48 font-semibold h-8"
+              className="w-32 sm:w-48 font-semibold h-8 text-sm"
             />
           </div>
           
-          <div className="flex items-center gap-2">
-            {/* Zoom Control */}
-            <div className="flex items-center gap-1 bg-muted rounded-lg px-2 py-1">
+          <div className="flex items-center gap-1 lg:gap-2">
+            {/* Zoom Control - Hide on mobile */}
+            <div className="hidden md:flex items-center gap-1 bg-muted rounded-lg px-2 py-1">
               <Button
                 variant="ghost"
                 size="icon"
@@ -526,36 +985,37 @@ export default function LandingPageEditorPage() {
             </div>
 
             {/* Device Switcher */}
-            <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+            <div className="flex items-center gap-0.5 bg-muted rounded-lg p-0.5 lg:p-1">
               <Button
                 variant={previewDevice === 'desktop' ? 'secondary' : 'ghost'}
                 size="sm"
-                className="h-7 w-7 p-0"
+                className="h-6 w-6 lg:h-7 lg:w-7 p-0"
                 onClick={() => setPreviewDevice('desktop')}
               >
-                <Monitor className="w-4 h-4" />
+                <Monitor className="w-3 h-3 lg:w-4 lg:h-4" />
               </Button>
               <Button
                 variant={previewDevice === 'tablet' ? 'secondary' : 'ghost'}
                 size="sm"
-                className="h-7 w-7 p-0"
+                className="h-6 w-6 lg:h-7 lg:w-7 p-0"
                 onClick={() => setPreviewDevice('tablet')}
               >
-                <Tablet className="w-4 h-4" />
+                <Tablet className="w-3 h-3 lg:w-4 lg:h-4" />
               </Button>
               <Button
                 variant={previewDevice === 'mobile' ? 'secondary' : 'ghost'}
                 size="sm"
-                className="h-7 w-7 p-0"
+                className="h-6 w-6 lg:h-7 lg:w-7 p-0"
                 onClick={() => setPreviewDevice('mobile')}
               >
-                <Smartphone className="w-4 h-4" />
+                <Smartphone className="w-3 h-3 lg:w-4 lg:h-4" />
               </Button>
             </div>
 
             <Button 
               variant="outline" 
               size="sm"
+              className="hidden sm:flex"
               onClick={() => {
                 const previewUrl = templateId 
                   ? `/dashboard/landing-pages/preview/new?template=${templateId}`
@@ -563,8 +1023,8 @@ export default function LandingPageEditorPage() {
                 window.open(previewUrl, '_blank');
               }}
             >
-              <Eye className="w-4 h-4 ml-1" />
-              معاينة
+              <Eye className="w-4 h-4 lg:ml-1" />
+              <span className="hidden lg:inline">معاينة</span>
             </Button>
             <Button 
               size="sm"
@@ -572,312 +1032,32 @@ export default function LandingPageEditorPage() {
               onClick={handleSave}
               disabled={isSaving}
             >
-              {isSaving ? <Loader2 className="w-4 h-4 ml-1 animate-spin" /> : <Save className="w-4 h-4 ml-1" />}
-              حفظ
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 lg:ml-1" />}
+              <span className="hidden lg:inline">حفظ</span>
             </Button>
+
+            {/* Mobile Right Panel Toggle */}
+            <Sheet open={rightPanelOpen} onOpenChange={setRightPanelOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon" className="lg:hidden">
+                  <Settings className="w-4 h-4" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-80 p-0 overflow-y-auto">
+                <RightPanelContent />
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
 
         <div className="flex-1 flex overflow-hidden">
-          {/* Left Sidebar - Pages, Sections, Elements, Layers */}
-          <div className="w-72 border-l bg-card flex flex-col overflow-hidden">
-            {/* Pages */}
-            <div className="p-3 border-b">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">الصفحات</span>
-                <div className="flex gap-1">
-                  {/* إضافة صفحة تلقائية */}
-                  <Dialog open={showAddAutoPage} onOpenChange={setShowAddAutoPage}>
-                    <DialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" title="صفحات تلقائية">
-                        <Star className="w-4 h-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>إضافة صفحة تلقائية</DialogTitle>
-                      </DialogHeader>
-                      <div className="grid gap-3 pt-4">
-                        {AUTOMATIC_PAGES.map((page) => {
-                          const Icon = getPageTypeIcon(page.type);
-                          return (
-                            <Button
-                              key={page.type}
-                              variant="outline"
-                              className="h-auto py-4 justify-start gap-3"
-                              onClick={() => handleAddAutoPage(page.type)}
-                            >
-                              <Icon className="w-6 h-6 text-primary" />
-                              <div className="text-right">
-                                <p className="font-medium">{page.label}</p>
-                                <p className="text-xs text-muted-foreground">{page.description}</p>
-                              </div>
-                            </Button>
-                          );
-                        })}
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-
-                  {/* إضافة صفحة مخصصة */}
-                  <Dialog open={showAddPage} onOpenChange={setShowAddPage}>
-                    <DialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7">
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>إضافة صفحة جديدة</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4 pt-4">
-                        <div className="space-y-2">
-                          <Label>اسم الصفحة</Label>
-                          <Input 
-                            value={newPageName}
-                            onChange={(e) => setNewPageName(e.target.value)}
-                            placeholder="مثال: صفحة الشكر"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>نوع الصفحة</Label>
-                          <Select value={newPageType} onValueChange={(v: LandingPage['type']) => setNewPageType(v)}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {PAGE_TYPES.map((type) => (
-                                <SelectItem key={type.value} value={type.value}>
-                                  {type.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <Button className="w-full bg-primary-gradient" onClick={handleAddPage}>
-                          إضافة الصفحة
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </div>
-              <ScrollArea className="h-24">
-                <div className="space-y-1">
-                  {pages.map((page) => {
-                    const PageIcon = getPageTypeIcon(page.type);
-                    return (
-                      <div
-                        key={page.id}
-                        className={cn(
-                          "flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors group",
-                          activePage === page.id ? 'bg-primary/10 text-primary' : 'hover:bg-muted'
-                        )}
-                        onClick={() => { setActivePage(page.id); setActiveSection(null); }}
-                      >
-                        <div className="flex items-center gap-2">
-                          <PageIcon className="w-4 h-4" />
-                          <span className="text-sm truncate">{page.name}</span>
-                        </div>
-                        {pages.length > 1 && (
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                            onClick={(e) => { e.stopPropagation(); handleDeletePage(page.id); }}
-                          >
-                            <Trash2 className="w-3 h-3 text-destructive" />
-                          </Button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
-            </div>
-
-            {/* Tabs: Sections / Elements / Layers */}
-            <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="flex-1 flex flex-col overflow-hidden">
-              <TabsList className="w-full grid grid-cols-3 mx-3 mt-2" style={{ width: 'calc(100% - 24px)' }}>
-                <TabsTrigger value="sections" className="text-xs">الأقسام</TabsTrigger>
-                <TabsTrigger value="elements" className="text-xs">العناصر</TabsTrigger>
-                <TabsTrigger value="layers" className="text-xs">الطبقات</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="sections" className="flex-1 overflow-hidden m-0">
-                <ScrollArea className="h-full">
-                  <div className="p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">أقسام الصفحة</span>
-                      <Dialog open={showAddSection} onOpenChange={setShowAddSection}>
-                        <DialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7">
-                            <Plus className="w-4 h-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-2xl">
-                          <DialogHeader>
-                            <DialogTitle>اختر نوع القسم</DialogTitle>
-                          </DialogHeader>
-                          <div className="grid grid-cols-3 gap-3 pt-4">
-                            {sectionTypes.map((section) => {
-                              const Icon = getSectionIcon(section.type);
-                              return (
-                                <Button
-                                  key={section.type}
-                                  variant="outline"
-                                  className="h-auto py-4 flex flex-col gap-2"
-                                  onClick={() => handleAddSection(section.type as LandingPageSection['type'])}
-                                >
-                                  <Icon className="w-6 h-6 text-primary" />
-                                  <span className="text-sm">{section.label}</span>
-                                </Button>
-                              );
-                            })}
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-
-                    {currentPage?.sections.length === 0 ? (
-                      <div className="text-center py-8">
-                        <Layout className="w-10 h-10 mx-auto mb-3 text-muted-foreground opacity-50" />
-                        <p className="text-sm text-muted-foreground mb-3">لا توجد أقسام</p>
-                        <Button size="sm" onClick={() => setShowAddSection(true)}>
-                          <Plus className="w-4 h-4 ml-1" />
-                          إضافة قسم
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {currentPage?.sections.map((section, index) => {
-                          const Icon = getSectionIcon(section.type);
-                          return (
-                            <div
-                              key={section.id}
-                              className={cn(
-                                "flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors",
-                                activeSection === section.id 
-                                  ? 'border-primary bg-primary/5' 
-                                  : 'border-border hover:border-primary/50'
-                              )}
-                              onClick={() => setActiveSection(section.id)}
-                            >
-                              <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab flex-shrink-0" />
-                              <Icon className="w-4 h-4 text-primary flex-shrink-0" />
-                              <span className="text-sm flex-1 truncate">{section.title}</span>
-                              <div className="flex items-center gap-0.5 flex-shrink-0">
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-6 w-6"
-                                  onClick={(e) => { e.stopPropagation(); handleMoveSection(section.id, 'up'); }}
-                                  disabled={index === 0}
-                                >
-                                  <ArrowUp className="w-3 h-3" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-6 w-6"
-                                  onClick={(e) => { e.stopPropagation(); handleMoveSection(section.id, 'down'); }}
-                                  disabled={index === (currentPage?.sections.length || 0) - 1}
-                                >
-                                  <ArrowDown className="w-3 h-3" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-6 w-6 text-destructive"
-                                  onClick={(e) => { e.stopPropagation(); handleDeleteSection(section.id); }}
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </ScrollArea>
-              </TabsContent>
-
-              <TabsContent value="elements" className="flex-1 overflow-hidden m-0">
-                <ScrollArea className="h-full">
-                  <ElementToolbar onAddElement={addElement} />
-                </ScrollArea>
-              </TabsContent>
-
-              <TabsContent value="layers" className="flex-1 overflow-hidden m-0">
-                <ScrollArea className="h-full">
-                  <LayersPanel
-                    elements={elements}
-                    selectedElementId={selectedElementId}
-                    onSelectElement={setSelectedElementId}
-                    onDeleteElement={deleteElement}
-                    onDuplicateElement={duplicateElement}
-                    onToggleVisibility={toggleVisibility}
-                    onToggleLock={toggleLock}
-                    onReorderElements={reorderElements}
-                    onMoveLayer={moveLayer}
-                  />
-                </ScrollArea>
-              </TabsContent>
-            </Tabs>
-
-            {/* Page Settings */}
-            <div className="p-3 border-t">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full"
-                onClick={() => setShowSettings(!showSettings)}
-              >
-                <Palette className="w-4 h-4 ml-2" />
-                إعدادات الألوان
-              </Button>
-              {showSettings && currentPage && (
-                <div className="mt-3 space-y-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs">اللون الرئيسي</Label>
-                    <div className="flex gap-2">
-                      <input 
-                        type="color" 
-                        value={currentPage.settings.primaryColor}
-                        onChange={(e) => updatePageSettings('primaryColor', e.target.value)}
-                        className="w-10 h-8 rounded cursor-pointer"
-                      />
-                      <Input 
-                        value={currentPage.settings.primaryColor}
-                        onChange={(e) => updatePageSettings('primaryColor', e.target.value)}
-                        className="h-8 text-xs"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">اللون الثانوي</Label>
-                    <div className="flex gap-2">
-                      <input 
-                        type="color" 
-                        value={currentPage.settings.secondaryColor}
-                        onChange={(e) => updatePageSettings('secondaryColor', e.target.value)}
-                        className="w-10 h-8 rounded cursor-pointer"
-                      />
-                      <Input 
-                        value={currentPage.settings.secondaryColor}
-                        onChange={(e) => updatePageSettings('secondaryColor', e.target.value)}
-                        className="h-8 text-xs"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+          {/* Left Sidebar - Desktop */}
+          <div className="w-72 border-l bg-card hidden lg:flex flex-col overflow-hidden">
+            <LeftPanelContent />
           </div>
 
           {/* Center - Live Preview */}
-          <div className="flex-1 bg-muted/50 overflow-auto p-4 flex justify-center">
+          <div className="flex-1 bg-muted/50 overflow-auto p-2 lg:p-4 flex justify-center">
             <div 
               className={cn(
                 "bg-white shadow-lg rounded-lg overflow-auto transition-all duration-300",
@@ -891,7 +1071,13 @@ export default function LandingPageEditorPage() {
                   page={currentPage} 
                   isEditing={true}
                   activeSection={activeSection}
-                  onSectionClick={setActiveSection}
+                  onSectionClick={(sectionId) => {
+                    setActiveSection(sectionId);
+                    // Open right panel on mobile when section is selected
+                    if (window.innerWidth < 1024) {
+                      setRightPanelOpen(true);
+                    }
+                  }}
                   onContentChange={updateSectionContent}
                 />
               ) : (
@@ -903,329 +1089,243 @@ export default function LandingPageEditorPage() {
             </div>
           </div>
 
-          {/* Right Sidebar - Properties Panel */}
-          <div className="w-80 border-r bg-card flex flex-col overflow-hidden">
-            <Tabs value={rightPanelTab} onValueChange={(v: any) => setRightPanelTab(v)} className="flex-1 flex flex-col">
-              <div className="p-3 border-b">
-                <TabsList className="w-full grid grid-cols-3">
-                  <TabsTrigger value="properties" className="text-xs">الخصائص</TabsTrigger>
-                  <TabsTrigger value="style" className="text-xs">التنسيق</TabsTrigger>
-                  <TabsTrigger value="background" className="text-xs">الخلفية</TabsTrigger>
-                </TabsList>
-              </div>
-
-              <ScrollArea className="flex-1">
-                <TabsContent value="properties" className="m-0">
-                  {activeFullSection ? (
-                    <div className="p-4 space-y-4">
-                      <div className="space-y-2">
-                        <Label>عنوان القسم</Label>
-                        <Input 
-                          value={activeFullSection.title}
-                          onChange={(e) => {
-                            setPages(prev => prev.map(p => 
-                              p.id === activePage 
-                                ? { 
-                                    ...p, 
-                                    sections: p.sections.map(s => 
-                                      s.id === activeSection 
-                                        ? { ...s, title: e.target.value }
-                                        : s
-                                    ) 
-                                  }
-                                : p
-                            ));
-                          }}
-                        />
-                      </div>
-
-                      {/* Hero Section Properties */}
-                      {activeFullSection.type === 'hero' && (
-                        <>
-                          <div className="space-y-2">
-                            <Label>العنوان الرئيسي</Label>
-                            <Input 
-                              value={activeFullSection.content.headline || ''}
-                              onChange={(e) => updateSectionContent(activeSection!, 'headline', e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>العنوان الفرعي</Label>
-                            <Textarea 
-                              value={activeFullSection.content.subheadline || ''}
-                              onChange={(e) => updateSectionContent(activeSection!, 'subheadline', e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>نص الزر</Label>
-                            <Input 
-                              value={activeFullSection.content.buttonText || ''}
-                              onChange={(e) => updateSectionContent(activeSection!, 'buttonText', e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>رابط الزر</Label>
-                            <Input 
-                              value={activeFullSection.content.buttonUrl || ''}
-                              onChange={(e) => updateSectionContent(activeSection!, 'buttonUrl', e.target.value)}
-                              placeholder="#section أو /page أو https://..."
-                            />
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <Label>فتح في نافذة جديدة</Label>
-                            <input 
-                              type="checkbox"
-                              checked={activeFullSection.content.openInNewTab || false}
-                              onChange={(e) => updateSectionContent(activeSection!, 'openInNewTab', e.target.checked)}
-                              className="w-4 h-4"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>الشارة</Label>
-                            <Input 
-                              value={activeFullSection.content.badge || ''}
-                              onChange={(e) => updateSectionContent(activeSection!, 'badge', e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>ستايل التصميم</Label>
-                            <Select
-                              value={activeFullSection.content.style || 'modern'}
-                              onValueChange={(value) => updateSectionContent(activeSection!, 'style', value)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="modern">عصري</SelectItem>
-                                <SelectItem value="bold">جريء</SelectItem>
-                                <SelectItem value="elegant">أنيق</SelectItem>
-                                <SelectItem value="dynamic">ديناميكي</SelectItem>
-                                <SelectItem value="gradient">متدرج</SelectItem>
-                                <SelectItem value="professional">احترافي</SelectItem>
-                                <SelectItem value="minimal">بسيط</SelectItem>
-                                <SelectItem value="classic">كلاسيكي</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-2">
-                            <Label>تخطيط النص</Label>
-                            <Select
-                              value={activeFullSection.content.layout || 'center'}
-                              onValueChange={(value) => updateSectionContent(activeSection!, 'layout', value)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="center">وسط</SelectItem>
-                                <SelectItem value="right">يمين</SelectItem>
-                                <SelectItem value="left">يسار</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </>
-                      )}
-
-                      {/* Pricing Section Properties */}
-                      {activeFullSection.type === 'pricing' && (
-                        <>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="space-y-2">
-                              <Label>السعر الأصلي</Label>
-                              <Input 
-                                value={activeFullSection.content.originalPrice || ''}
-                                onChange={(e) => updateSectionContent(activeSection!, 'originalPrice', e.target.value)}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>سعر العرض</Label>
-                              <Input 
-                                value={activeFullSection.content.salePrice || ''}
-                                onChange={(e) => updateSectionContent(activeSection!, 'salePrice', e.target.value)}
-                              />
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            <Label>العملة</Label>
-                            <Input 
-                              value={activeFullSection.content.currency || 'ر.س'}
-                              onChange={(e) => updateSectionContent(activeSection!, 'currency', e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>نص الزر</Label>
-                            <Input 
-                              value={activeFullSection.content.buttonText || ''}
-                              onChange={(e) => updateSectionContent(activeSection!, 'buttonText', e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>رابط الزر</Label>
-                            <Input 
-                              value={activeFullSection.content.buttonUrl || ''}
-                              onChange={(e) => updateSectionContent(activeSection!, 'buttonUrl', e.target.value)}
-                            />
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <Label>فتح في نافذة جديدة</Label>
-                            <input 
-                              type="checkbox"
-                              checked={activeFullSection.content.openInNewTab || false}
-                              onChange={(e) => updateSectionContent(activeSection!, 'openInNewTab', e.target.checked)}
-                              className="w-4 h-4"
-                            />
-                          </div>
-                        </>
-                      )}
-
-                      {/* CTA Section Properties */}
-                      {activeFullSection.type === 'cta' && (
-                        <>
-                          <div className="space-y-2">
-                            <Label>العنوان</Label>
-                            <Input 
-                              value={activeFullSection.content.headline || ''}
-                              onChange={(e) => updateSectionContent(activeSection!, 'headline', e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>العنوان الفرعي</Label>
-                            <Textarea 
-                              value={activeFullSection.content.subheadline || ''}
-                              onChange={(e) => updateSectionContent(activeSection!, 'subheadline', e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>نص الزر</Label>
-                            <Input 
-                              value={activeFullSection.content.buttonText || ''}
-                              onChange={(e) => updateSectionContent(activeSection!, 'buttonText', e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>رابط الزر</Label>
-                            <Input 
-                              value={activeFullSection.content.buttonUrl || ''}
-                              onChange={(e) => updateSectionContent(activeSection!, 'buttonUrl', e.target.value)}
-                            />
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <Label>فتح في نافذة جديدة</Label>
-                            <input 
-                              type="checkbox"
-                              checked={activeFullSection.content.openInNewTab || false}
-                              onChange={(e) => updateSectionContent(activeSection!, 'openInNewTab', e.target.checked)}
-                              className="w-4 h-4"
-                            />
-                          </div>
-                        </>
-                      )}
-
-                      {/* Video Section Properties */}
-                      {activeFullSection.type === 'video' && (
-                        <>
-                          <div className="space-y-2">
-                            <Label>رابط الفيديو</Label>
-                            <Input 
-                              value={activeFullSection.content.videoUrl || ''}
-                              onChange={(e) => updateSectionContent(activeSection!, 'videoUrl', e.target.value)}
-                              placeholder="رابط يوتيوب..."
-                            />
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <Label>تشغيل تلقائي</Label>
-                            <input 
-                              type="checkbox"
-                              checked={activeFullSection.content.autoplay || false}
-                              onChange={(e) => updateSectionContent(activeSection!, 'autoplay', e.target.checked)}
-                              className="w-4 h-4"
-                            />
-                          </div>
-                        </>
-                      )}
-
-                      {/* Countdown Section Properties */}
-                      {activeFullSection.type === 'countdown' && (
-                        <div className="space-y-2">
-                          <Label>تاريخ الانتهاء</Label>
-                          <Input 
-                            type="datetime-local"
-                            value={activeFullSection.content.endDate ? new Date(activeFullSection.content.endDate).toISOString().slice(0, 16) : ''}
-                            onChange={(e) => updateSectionContent(activeSection!, 'endDate', new Date(e.target.value).toISOString())}
-                          />
-                        </div>
-                      )}
-
-                      {/* Contact/Form Section Properties */}
-                      {activeFullSection.type === 'contact' && (
-                        <FormBuilder
-                          form={{
-                            fields: activeFullSection.content.fields || [],
-                            submitButtonText: activeFullSection.content.submitButtonText || 'إرسال',
-                            successMessage: activeFullSection.content.successMessage || 'تم الإرسال بنجاح!',
-                            redirectUrl: activeFullSection.content.redirectUrl,
-                          }}
-                          onChange={(form) => {
-                            updateSectionContent(activeSection!, 'fields', form.fields);
-                            updateSectionContent(activeSection!, 'submitButtonText', form.submitButtonText);
-                            updateSectionContent(activeSection!, 'successMessage', form.successMessage);
-                            updateSectionContent(activeSection!, 'redirectUrl', form.redirectUrl);
-                          }}
-                        />
-                      )}
-                    </div>
-                  ) : selectedElement ? (
-                    <StyleEditor
-                      elementType={selectedElement.type}
-                      style={selectedElement.style}
-                      content={selectedElement.content}
-                      onStyleChange={(style) => updateElementStyle(selectedElement.id, style)}
-                      onContentChange={(content) => updateElementContent(selectedElement.id, content)}
-                    />
-                  ) : (
-                    <div className="p-8 text-center text-muted-foreground">
-                      <Settings className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                      <p className="text-sm">اختر قسم أو عنصر لتحريره</p>
-                    </div>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="style" className="m-0">
-                  {selectedElement ? (
-                    <StyleEditor
-                      elementType={selectedElement.type}
-                      style={selectedElement.style}
-                      content={selectedElement.content}
-                      onStyleChange={(style) => updateElementStyle(selectedElement.id, style)}
-                      onContentChange={(content) => updateElementContent(selectedElement.id, content)}
-                    />
-                  ) : (
-                    <div className="p-8 text-center text-muted-foreground">
-                      <Type className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                      <p className="text-sm">اختر عنصر لتنسيقه</p>
-                    </div>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="background" className="m-0 p-4">
-                  {activeFullSection ? (
-                    <SectionBackgroundEditor
-                      settings={activeFullSection.content.sectionSettings || {}}
-                      onChange={(settings) => updateSectionSettings(activeSection!, settings)}
-                    />
-                  ) : (
-                    <div className="p-8 text-center text-muted-foreground">
-                      <Image className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                      <p className="text-sm">اختر قسم لتعديل خلفيته</p>
-                    </div>
-                  )}
-                </TabsContent>
-              </ScrollArea>
-            </Tabs>
+          {/* Right Sidebar - Desktop */}
+          <div className="w-80 border-r bg-card hidden lg:flex flex-col overflow-hidden">
+            <RightPanelContent />
           </div>
         </div>
       </div>
     </div>
   );
+
+  // Right Panel Content Component
+  function RightPanelContent() {
+    return (
+      <Tabs value={rightPanelTab} onValueChange={(v: any) => setRightPanelTab(v)} className="flex-1 flex flex-col h-full">
+        <div className="p-3 border-b">
+          <TabsList className="w-full grid grid-cols-3">
+            <TabsTrigger value="properties" className="text-xs">الخصائص</TabsTrigger>
+            <TabsTrigger value="style" className="text-xs">التنسيق</TabsTrigger>
+            <TabsTrigger value="background" className="text-xs">الخلفية</TabsTrigger>
+          </TabsList>
+        </div>
+
+        <ScrollArea className="flex-1">
+          <TabsContent value="properties" className="m-0">
+            {activeFullSection ? (
+              <div className="p-4 space-y-4">
+                <div className="space-y-2">
+                  <Label>عنوان القسم</Label>
+                  <Input 
+                    value={activeFullSection.title}
+                    onChange={(e) => {
+                      setPages(prev => prev.map(p => 
+                        p.id === activePage 
+                          ? { 
+                              ...p, 
+                              sections: p.sections.map(s => 
+                                s.id === activeSection 
+                                  ? { ...s, title: e.target.value }
+                                  : s
+                              ) 
+                            }
+                          : p
+                      ));
+                    }}
+                  />
+                </div>
+
+                {/* Hero Section Properties */}
+                {activeFullSection.type === 'hero' && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>العنوان الرئيسي</Label>
+                      <Input 
+                        value={activeFullSection.content.headline || ''}
+                        onChange={(e) => updateSectionContent(activeSection!, 'headline', e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>العنوان الفرعي</Label>
+                      <Textarea 
+                        value={activeFullSection.content.subheadline || ''}
+                        onChange={(e) => updateSectionContent(activeSection!, 'subheadline', e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>نص الزر</Label>
+                      <Input 
+                        value={activeFullSection.content.buttonText || ''}
+                        onChange={(e) => updateSectionContent(activeSection!, 'buttonText', e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>رابط الزر</Label>
+                      <Input 
+                        value={activeFullSection.content.buttonUrl || ''}
+                        onChange={(e) => updateSectionContent(activeSection!, 'buttonUrl', e.target.value)}
+                        placeholder="#section أو /page أو https://..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>ستايل التصميم</Label>
+                      <Select
+                        value={activeFullSection.content.style || 'modern'}
+                        onValueChange={(value) => updateSectionContent(activeSection!, 'style', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="modern">عصري</SelectItem>
+                          <SelectItem value="bold">جريء</SelectItem>
+                          <SelectItem value="elegant">أنيق</SelectItem>
+                          <SelectItem value="minimal">بسيط</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                )}
+
+                {/* Pricing Section Properties */}
+                {activeFullSection.type === 'pricing' && (
+                  <>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-2">
+                        <Label>السعر الأصلي</Label>
+                        <Input 
+                          value={activeFullSection.content.originalPrice || ''}
+                          onChange={(e) => updateSectionContent(activeSection!, 'originalPrice', e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>سعر العرض</Label>
+                        <Input 
+                          value={activeFullSection.content.salePrice || ''}
+                          onChange={(e) => updateSectionContent(activeSection!, 'salePrice', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>نص الزر</Label>
+                      <Input 
+                        value={activeFullSection.content.buttonText || ''}
+                        onChange={(e) => updateSectionContent(activeSection!, 'buttonText', e.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* CTA Section Properties */}
+                {activeFullSection.type === 'cta' && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>العنوان</Label>
+                      <Input 
+                        value={activeFullSection.content.headline || ''}
+                        onChange={(e) => updateSectionContent(activeSection!, 'headline', e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>نص الزر</Label>
+                      <Input 
+                        value={activeFullSection.content.buttonText || ''}
+                        onChange={(e) => updateSectionContent(activeSection!, 'buttonText', e.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Video Section Properties */}
+                {activeFullSection.type === 'video' && (
+                  <div className="space-y-2">
+                    <Label>رابط الفيديو</Label>
+                    <Input 
+                      value={activeFullSection.content.videoUrl || ''}
+                      onChange={(e) => updateSectionContent(activeSection!, 'videoUrl', e.target.value)}
+                      placeholder="رابط يوتيوب..."
+                    />
+                  </div>
+                )}
+
+                {/* Countdown Section Properties */}
+                {activeFullSection.type === 'countdown' && (
+                  <div className="space-y-2">
+                    <Label>تاريخ الانتهاء</Label>
+                    <Input 
+                      type="datetime-local"
+                      value={activeFullSection.content.endDate ? new Date(activeFullSection.content.endDate).toISOString().slice(0, 16) : ''}
+                      onChange={(e) => updateSectionContent(activeSection!, 'endDate', new Date(e.target.value).toISOString())}
+                    />
+                  </div>
+                )}
+
+                {/* Contact/Form Section Properties */}
+                {activeFullSection.type === 'contact' && (
+                  <FormBuilder
+                    form={{
+                      fields: activeFullSection.content.fields || [],
+                      submitButtonText: activeFullSection.content.submitButtonText || 'إرسال',
+                      successMessage: activeFullSection.content.successMessage || 'تم الإرسال بنجاح!',
+                      redirectUrl: activeFullSection.content.redirectUrl,
+                    }}
+                    onChange={(form) => {
+                      updateSectionContent(activeSection!, 'fields', form.fields);
+                      updateSectionContent(activeSection!, 'submitButtonText', form.submitButtonText);
+                      updateSectionContent(activeSection!, 'successMessage', form.successMessage);
+                      updateSectionContent(activeSection!, 'redirectUrl', form.redirectUrl);
+                    }}
+                  />
+                )}
+              </div>
+            ) : selectedElement ? (
+              <StyleEditor
+                elementType={selectedElement.type}
+                style={selectedElement.style}
+                content={selectedElement.content}
+                onStyleChange={(style) => updateElementStyle(selectedElement.id, style)}
+                onContentChange={(content) => updateElementContent(selectedElement.id, content)}
+              />
+            ) : (
+              <div className="p-8 text-center text-muted-foreground">
+                <Settings className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p className="text-sm">اختر قسم أو عنصر لتحريره</p>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="style" className="m-0">
+            {selectedElement ? (
+              <StyleEditor
+                elementType={selectedElement.type}
+                style={selectedElement.style}
+                content={selectedElement.content}
+                onStyleChange={(style) => updateElementStyle(selectedElement.id, style)}
+                onContentChange={(content) => updateElementContent(selectedElement.id, content)}
+              />
+            ) : (
+              <div className="p-8 text-center text-muted-foreground">
+                <Type className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p className="text-sm">اختر عنصر لتنسيقه</p>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="background" className="m-0 p-4">
+            {activeFullSection ? (
+              <SectionBackgroundEditor
+                settings={activeFullSection.content.sectionSettings || {}}
+                onChange={(settings) => updateSectionSettings(activeSection!, settings)}
+              />
+            ) : (
+              <div className="p-8 text-center text-muted-foreground">
+                <Image className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p className="text-sm">اختر قسم لتعديل خلفيته</p>
+              </div>
+            )}
+          </TabsContent>
+        </ScrollArea>
+      </Tabs>
+    );
+  }
 }

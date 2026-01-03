@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { DraggableElement, ElementStyle } from "./types";
+import { arrayMove } from "@dnd-kit/sortable";
 
 export function useEditorElements(initialElements: DraggableElement[] = []) {
   const [elements, setElements] = useState<DraggableElement[]>(initialElements);
@@ -21,6 +22,7 @@ export function useEditorElements(initialElements: DraggableElement[] = []) {
     };
     setElements((prev) => [...prev, newElement]);
     setSelectedElementId(newElement.id);
+    return newElement;
   }, [elements.length]);
 
   const updateElement = useCallback((id: string, updates: Partial<DraggableElement>) => {
@@ -86,7 +88,10 @@ export function useEditorElements(initialElements: DraggableElement[] = []) {
   }, []);
 
   const reorderElements = useCallback((newElements: DraggableElement[]) => {
-    setElements(newElements);
+    setElements(newElements.map((el, i) => ({
+      ...el,
+      layer: i + 1
+    })));
   }, []);
 
   const moveLayer = useCallback((id: string, direction: 'up' | 'down') => {
@@ -108,6 +113,22 @@ export function useEditorElements(initialElements: DraggableElement[] = []) {
     });
   }, []);
 
+  const moveElement = useCallback((id: string, position: { x: number; y: number }) => {
+    setElements((prev) =>
+      prev.map((el) =>
+        el.id === id && !el.locked ? { ...el, position } : el
+      )
+    );
+  }, []);
+
+  const resizeElement = useCallback((id: string, size: { width: number; height: number }) => {
+    setElements((prev) =>
+      prev.map((el) =>
+        el.id === id && !el.locked ? { ...el, size } : el
+      )
+    );
+  }, []);
+
   return {
     elements,
     setElements,
@@ -124,6 +145,8 @@ export function useEditorElements(initialElements: DraggableElement[] = []) {
     toggleLock,
     reorderElements,
     moveLayer,
+    moveElement,
+    resizeElement,
   };
 }
 

@@ -19,7 +19,9 @@ import {
   Megaphone,
   Crown,
   CreditCard,
-  Key
+  Key,
+  Menu,
+  X
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
@@ -28,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const menuItems = [
   { title: "نظرة عامة", url: "/dashboard", icon: LayoutDashboard },
@@ -56,75 +59,25 @@ const adminItems = [
   { title: "رفع قوالب جاهزة", url: "/dashboard/admin/upload-templates", icon: FileArchive },
 ];
 
-export function DashboardSidebar() {
-  const [collapsed, setCollapsed] = useState(false);
-  const { data: userRole } = useUserRole();
+function SidebarContent({ 
+  collapsed, 
+  userRole, 
+  userEmail, 
+  userInitials, 
+  handleLogout,
+  onNavigate 
+}: { 
+  collapsed: boolean;
+  userRole: any;
+  userEmail: string | null;
+  userInitials: string;
+  handleLogout: () => void;
+  onNavigate?: () => void;
+}) {
   const navigate = useNavigate();
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [userInitials, setUserInitials] = useState("؟؟");
-
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserEmail(user.email || null);
-        if (user.email) {
-          setUserInitials(user.email.substring(0, 2).toUpperCase());
-        }
-      }
-    };
-    getUser();
-  }, []);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/auth");
-  };
 
   return (
-    <aside 
-      className={cn(
-        "bg-card border-l border-border h-screen sticky top-0 transition-all duration-300 flex flex-col",
-        collapsed ? "w-20" : "w-64"
-      )}
-    >
-      {/* Logo - Clickable to go home */}
-      <div className="p-4 border-b border-border flex items-center justify-between">
-        {!collapsed && (
-          <button 
-            onClick={() => navigate("/")}
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-          >
-            <div className="w-10 h-10 rounded-xl bg-primary-gradient flex items-center justify-center">
-              <Mail className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="font-bold text-lg text-foreground">ماركيتلي</span>
-          </button>
-        )}
-        {collapsed && (
-          <button 
-            onClick={() => navigate("/")}
-            className="w-10 h-10 rounded-xl bg-primary-gradient flex items-center justify-center mx-auto hover:opacity-80 transition-opacity"
-          >
-            <Mail className="w-5 h-5 text-primary-foreground" />
-          </button>
-        )}
-      </div>
-
-      {/* Toggle Button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => setCollapsed(!collapsed)}
-        className="absolute -left-3 top-6 w-6 h-6 rounded-full border border-border bg-card shadow-sm hover:bg-muted"
-      >
-        {collapsed ? (
-          <ChevronRight className="w-3 h-3" />
-        ) : (
-          <ChevronLeft className="w-3 h-3" />
-        )}
-      </Button>
-
+    <>
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {menuItems.map((item) => (
@@ -132,6 +85,7 @@ export function DashboardSidebar() {
             key={item.url}
             to={item.url}
             end={item.url === "/dashboard"}
+            onClick={onNavigate}
             className={cn(
               "flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
               collapsed && "justify-center px-2"
@@ -153,6 +107,7 @@ export function DashboardSidebar() {
               <NavLink
                 key={item.url}
                 to={item.url}
+                onClick={onNavigate}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
                   collapsed && "justify-center px-2"
@@ -196,6 +151,127 @@ export function DashboardSidebar() {
           )}
         </div>
       </div>
-    </aside>
+    </>
+  );
+}
+
+export function DashboardSidebar() {
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const { data: userRole } = useUserRole();
+  const navigate = useNavigate();
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userInitials, setUserInitials] = useState("؟؟");
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserEmail(user.email || null);
+        if (user.email) {
+          setUserInitials(user.email.substring(0, 2).toUpperCase());
+        }
+      }
+    };
+    getUser();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
+
+  return (
+    <>
+      {/* Mobile Menu Button - Fixed Position */}
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            className="fixed top-4 right-4 z-50 lg:hidden bg-card shadow-lg"
+          >
+            <Menu className="w-5 h-5" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="right" className="w-72 p-0 bg-card">
+          {/* Mobile Header */}
+          <div className="p-4 border-b border-border flex items-center justify-between">
+            <button 
+              onClick={() => { navigate("/"); setMobileOpen(false); }}
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            >
+              <div className="w-10 h-10 rounded-xl bg-primary-gradient flex items-center justify-center">
+                <Mail className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <span className="font-bold text-lg text-foreground">ماركيتلي</span>
+            </button>
+          </div>
+          <div className="flex flex-col h-[calc(100%-73px)]">
+            <SidebarContent 
+              collapsed={false} 
+              userRole={userRole}
+              userEmail={userEmail}
+              userInitials={userInitials}
+              handleLogout={handleLogout}
+              onNavigate={() => setMobileOpen(false)}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Desktop Sidebar */}
+      <aside 
+        className={cn(
+          "bg-card border-l border-border h-screen sticky top-0 transition-all duration-300 flex-col hidden lg:flex",
+          collapsed ? "w-20" : "w-64"
+        )}
+      >
+        {/* Logo - Clickable to go home */}
+        <div className="p-4 border-b border-border flex items-center justify-between">
+          {!collapsed && (
+            <button 
+              onClick={() => navigate("/")}
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            >
+              <div className="w-10 h-10 rounded-xl bg-primary-gradient flex items-center justify-center">
+                <Mail className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <span className="font-bold text-lg text-foreground">ماركيتلي</span>
+            </button>
+          )}
+          {collapsed && (
+            <button 
+              onClick={() => navigate("/")}
+              className="w-10 h-10 rounded-xl bg-primary-gradient flex items-center justify-center mx-auto hover:opacity-80 transition-opacity"
+            >
+              <Mail className="w-5 h-5 text-primary-foreground" />
+            </button>
+          )}
+        </div>
+
+        {/* Toggle Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setCollapsed(!collapsed)}
+          className="absolute -left-3 top-6 w-6 h-6 rounded-full border border-border bg-card shadow-sm hover:bg-muted"
+        >
+          {collapsed ? (
+            <ChevronRight className="w-3 h-3" />
+          ) : (
+            <ChevronLeft className="w-3 h-3" />
+          )}
+        </Button>
+
+        <SidebarContent 
+          collapsed={collapsed} 
+          userRole={userRole}
+          userEmail={userEmail}
+          userInitials={userInitials}
+          handleLogout={handleLogout}
+        />
+      </aside>
+    </>
   );
 }
