@@ -55,7 +55,7 @@ export interface FormElement {
 
 export interface DraggableElement {
   id: string;
-  type: 'text' | 'heading' | 'button' | 'image' | 'video' | 'form' | 'divider' | 'spacer' | 'icon' | 'countdown';
+  type: 'text' | 'heading' | 'button' | 'image' | 'video' | 'form' | 'divider' | 'spacer' | 'icon' | 'countdown' | 'gallery' | 'map' | 'social' | 'embed' | 'shape' | 'list' | 'quote' | 'affiliate';
   content: any;
   style: ElementStyle;
   position: {
@@ -100,18 +100,79 @@ export const PAGE_TYPES: PageType[] = [
   { value: 'custom', label: 'صفحة مخصصة', icon: 'FileText' },
 ];
 
-export const ELEMENT_TYPES = [
-  { type: 'heading', label: 'عنوان', icon: 'Type' },
-  { type: 'text', label: 'نص', icon: 'AlignLeft' },
-  { type: 'button', label: 'زر', icon: 'MousePointer' },
-  { type: 'image', label: 'صورة', icon: 'Image' },
-  { type: 'video', label: 'فيديو', icon: 'Video' },
-  { type: 'form', label: 'نموذج بريدي', icon: 'Mail' },
-  { type: 'divider', label: 'فاصل', icon: 'Minus' },
-  { type: 'spacer', label: 'مسافة', icon: 'MoveVertical' },
-  { type: 'icon', label: 'أيقونة', icon: 'Star' },
-  { type: 'countdown', label: 'عداد تنازلي', icon: 'Clock' },
+// Element categories for organized toolbar like Hostinger
+export interface ElementCategory {
+  id: string;
+  label: string;
+  icon: string;
+  elements: ElementType[];
+}
+
+export interface ElementType {
+  type: string;
+  label: string;
+  icon: string;
+  description?: string;
+}
+
+export const ELEMENT_CATEGORIES: ElementCategory[] = [
+  {
+    id: 'basic',
+    label: 'أساسي',
+    icon: 'Type',
+    elements: [
+      { type: 'heading', label: 'عنوان', icon: 'Type', description: 'أضف عنوان رئيسي أو فرعي' },
+      { type: 'text', label: 'نص', icon: 'AlignLeft', description: 'فقرة نصية قابلة للتحرير' },
+      { type: 'button', label: 'زر', icon: 'MousePointer', description: 'زر دعوة للإجراء' },
+      { type: 'list', label: 'قائمة', icon: 'List', description: 'قائمة منقطة أو مرقمة' },
+      { type: 'quote', label: 'اقتباس', icon: 'Quote', description: 'نص اقتباس مميز' },
+    ]
+  },
+  {
+    id: 'media',
+    label: 'وسائط',
+    icon: 'Image',
+    elements: [
+      { type: 'image', label: 'صورة', icon: 'Image', description: 'صورة من جهازك أو رابط' },
+      { type: 'video', label: 'فيديو', icon: 'Play', description: 'فيديو يوتيوب أو مباشر' },
+      { type: 'gallery', label: 'معرض صور', icon: 'Images', description: 'معرض صور متعددة' },
+      { type: 'icon', label: 'أيقونة', icon: 'Star', description: 'أيقونات متنوعة' },
+      { type: 'shape', label: 'شكل', icon: 'Shapes', description: 'أشكال هندسية وزخارف' },
+    ]
+  },
+  {
+    id: 'interactive',
+    label: 'تفاعلي',
+    icon: 'Sparkles',
+    elements: [
+      { type: 'form', label: 'نموذج اشتراك', icon: 'Mail', description: 'نموذج لجمع البريد' },
+      { type: 'countdown', label: 'عداد تنازلي', icon: 'Clock', description: 'عد تنازلي للعروض' },
+      { type: 'map', label: 'خريطة', icon: 'MapPin', description: 'خريطة Google Maps' },
+      { type: 'affiliate', label: 'رابط أفلييت', icon: 'Link', description: 'روابط التسويق بالعمولة' },
+    ]
+  },
+  {
+    id: 'social',
+    label: 'تواصل',
+    icon: 'Share2',
+    elements: [
+      { type: 'social', label: 'أيقونات التواصل', icon: 'Share2', description: 'روابط السوشيال ميديا' },
+      { type: 'embed', label: 'كود مضمن', icon: 'Code', description: 'HTML أو كود مخصص' },
+    ]
+  },
+  {
+    id: 'layout',
+    label: 'تخطيط',
+    icon: 'LayoutGrid',
+    elements: [
+      { type: 'divider', label: 'فاصل', icon: 'Minus', description: 'خط فاصل أفقي' },
+      { type: 'spacer', label: 'مسافة', icon: 'MoveVertical', description: 'مسافة فارغة' },
+    ]
+  },
 ];
+
+// Flat list for backward compatibility
+export const ELEMENT_TYPES = ELEMENT_CATEGORIES.flatMap(cat => cat.elements);
 
 export const FONT_SIZES = [
   { value: '12px', label: '12' },

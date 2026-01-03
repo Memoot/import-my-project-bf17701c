@@ -176,9 +176,56 @@ function getDefaultContent(type: string): any {
     case 'spacer':
       return { height: 40 };
     case 'divider':
-      return { style: 'solid' };
+      return { style: 'solid', color: '#e5e7eb', thickness: 1 };
     case 'icon':
-      return { name: 'Star', size: 48 };
+      return { name: 'Star', size: 48, color: '#3b82f6' };
+    case 'gallery':
+      return { 
+        images: [], 
+        columns: 3, 
+        gap: 8, 
+        style: 'grid' 
+      };
+    case 'map':
+      return { 
+        address: '', 
+        latitude: 24.7136, 
+        longitude: 46.6753, 
+        zoom: 14,
+        height: 300 
+      };
+    case 'social':
+      return {
+        links: [
+          { platform: 'facebook', url: '' },
+          { platform: 'twitter', url: '' },
+          { platform: 'instagram', url: '' },
+        ],
+        style: 'colored',
+        size: 'md'
+      };
+    case 'embed':
+      return { code: '', type: 'html' };
+    case 'shape':
+      return { shape: 'circle', color: '#3b82f6', size: 100 };
+    case 'list':
+      return { 
+        items: ['عنصر 1', 'عنصر 2', 'عنصر 3'],
+        style: 'bullet',
+        icon: 'CheckCircle'
+      };
+    case 'quote':
+      return { 
+        text: 'اقتباس ملهم هنا...', 
+        author: 'المؤلف',
+        style: 'modern'
+      };
+    case 'affiliate':
+      return { 
+        url: '', 
+        text: 'اشتري الآن',
+        trackingId: ''
+      };
     default:
       return {};
   }
