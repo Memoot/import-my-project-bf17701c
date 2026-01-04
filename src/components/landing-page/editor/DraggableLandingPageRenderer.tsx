@@ -83,7 +83,7 @@ export function DraggableLandingPageRenderer({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 6,
+        distance: 2,
       },
     }),
     useSensor(KeyboardSensor, {
