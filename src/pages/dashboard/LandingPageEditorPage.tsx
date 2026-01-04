@@ -76,7 +76,6 @@ import {
   closestCenter,
   KeyboardSensor,
   PointerSensor,
-  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -186,6 +185,7 @@ function SortableSectionItem({
     >
       <button
         className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded touch-none"
+        style={{ touchAction: 'none' }}
         {...attributes}
         {...listeners}
       >
@@ -249,17 +249,11 @@ export default function LandingPageEditorPage() {
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
   const [draggingSection, setDraggingSection] = useState<LandingPageSection | null>(null);
 
-  // Sensors for drag and drop - with touch support
+  // Sensors for drag and drop (PointerSensor works for mouse + modern touch)
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 200,
-        tolerance: 8,
+        distance: 4,
       },
     }),
     useSensor(KeyboardSensor, {

@@ -133,6 +133,7 @@ export function DraggableSectionRenderer({
           {/* Drag Handle - Large touch target */}
           <button
             className="cursor-grab active:cursor-grabbing p-2 hover:bg-muted rounded touch-none"
+            style={{ touchAction: 'none' }}
             {...attributes}
             {...listeners}
           >
