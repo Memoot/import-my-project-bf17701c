@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
@@ -33,7 +33,20 @@ import {
   Instagram,
   Link2,
   Check,
+  Edit3,
+  Type,
+  X,
+  Move,
+  Palette,
+  Plus,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Slider } from "@/components/ui/slider";
 
 const imageStyles = [
   { value: "professional", label: "احترافي", description: "مناسب للأعمال والشركات" },
@@ -103,6 +116,26 @@ export default function AIToolsPage() {
   // Share state
   const [shareOpen, setShareOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // Image editor state
+  const [showImageEditor, setShowImageEditor] = useState(false);
+  const [editorTexts, setEditorTexts] = useState<Array<{
+    id: string;
+    text: string;
+    x: number;
+    y: number;
+    fontSize: number;
+    color: string;
+    fontWeight: string;
+  }>>([]);
+  const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
+  const [newTextInput, setNewTextInput] = useState("");
+  const [textColor, setTextColor] = useState("#ffffff");
+  const [textFontSize, setTextFontSize] = useState(32);
+  const [textFontWeight, setTextFontWeight] = useState("bold");
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
@@ -255,6 +288,157 @@ export default function AIToolsPage() {
     } catch {
       toast({ title: "خطأ", description: "فشل في النسخ", variant: "destructive" });
     }
+  };
+
+  // Image Editor Functions
+  const addTextToImage = () => {
+    if (!newTextInput.trim()) return;
+    const newText = {
+      id: `text-${Date.now()}`,
+      text: newTextInput,
+      x: 50,
+      y: 50,
+      fontSize: textFontSize,
+      color: textColor,
+      fontWeight: textFontWeight,
+    };
+    setEditorTexts([...editorTexts, newText]);
+    setNewTextInput("");
+    setSelectedTextId(newText.id);
+  };
+
+  const updateSelectedText = (updates: Partial<typeof editorTexts[0]>) => {
+    if (!selectedTextId) return;
+    setEditorTexts(editorTexts.map(t => 
+      t.id === selectedTextId ? { ...t, ...updates } : t
+    ));
+  };
+
+  const deleteSelectedText = () => {
+    if (!selectedTextId) return;
+    setEditorTexts(editorTexts.filter(t => t.id !== selectedTextId));
+    setSelectedTextId(null);
+  };
+
+  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+    
+    // Check if clicking on a text
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    for (let i = editorTexts.length - 1; i >= 0; i--) {
+      const t = editorTexts[i];
+      ctx.font = `${t.fontWeight} ${t.fontSize}px Cairo, sans-serif`;
+      const metrics = ctx.measureText(t.text);
+      const textWidth = metrics.width;
+      const textHeight = t.fontSize;
+      
+      if (x >= t.x && x <= t.x + textWidth && 
+          y >= t.y - textHeight && y <= t.y) {
+        setSelectedTextId(t.id);
+        setIsDragging(true);
+        setDragOffset({ x: x - t.x, y: y - t.y });
+        return;
+      }
+    }
+    setSelectedTextId(null);
+  };
+
+  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDragging || !selectedTextId) return;
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+    
+    updateSelectedText({
+      x: x - dragOffset.x,
+      y: y - dragOffset.y,
+    });
+  };
+
+  const handleCanvasMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const renderImageWithTexts = () => {
+    const canvas = canvasRef.current;
+    if (!canvas || !generatedImage) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      
+      editorTexts.forEach(t => {
+        ctx.font = `${t.fontWeight} ${t.fontSize}px Cairo, sans-serif`;
+        ctx.fillStyle = t.color;
+        ctx.textAlign = 'right';
+        ctx.direction = 'rtl';
+        
+        // Add text shadow for better visibility
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 4;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 2;
+        
+        ctx.fillText(t.text, t.x, t.y);
+        
+        // Reset shadow
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+        
+        // Draw selection border if selected
+        if (t.id === selectedTextId) {
+          const metrics = ctx.measureText(t.text);
+          ctx.strokeStyle = '#3b82f6';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([5, 5]);
+          ctx.strokeRect(t.x - metrics.width - 10, t.y - t.fontSize - 5, metrics.width + 20, t.fontSize + 15);
+          ctx.setLineDash([]);
+        }
+      });
+    };
+    img.src = generatedImage;
+  };
+
+  useEffect(() => {
+    if (showImageEditor && generatedImage) {
+      renderImageWithTexts();
+    }
+  }, [showImageEditor, generatedImage, editorTexts, selectedTextId]);
+
+  const downloadEditedImage = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const link = document.createElement('a');
+    link.download = `edited-image-${Date.now()}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    toast({ title: "تم التحميل", description: "تم تحميل الصورة المعدلة بنجاح" });
+  };
+
+  const openImageEditor = () => {
+    setEditorTexts([]);
+    setSelectedTextId(null);
+    setShowImageEditor(true);
   };
 
   return (
@@ -428,9 +612,9 @@ export default function AIToolsPage() {
                             <Download className="w-4 h-4 ml-2" />
                             تحميل
                           </Button>
-                          <Button variant="outline" className="flex-1" onClick={handleCopyLink}>
-                            <Copy className="w-4 h-4 ml-2" />
-                            نسخ
+                          <Button variant="default" className="flex-1" onClick={openImageEditor}>
+                            <Edit3 className="w-4 h-4 ml-2" />
+                            تحرير وإضافة نص
                           </Button>
                           <Button variant="outline" onClick={handleGenerateImage} disabled={imageLoading}>
                             <RefreshCw className={`w-4 h-4 ${imageLoading ? 'animate-spin' : ''}`} />
@@ -653,6 +837,175 @@ export default function AIToolsPage() {
           </Tabs>
         </main>
       </div>
+
+      {/* Image Editor Dialog */}
+      <Dialog open={showImageEditor} onOpenChange={setShowImageEditor}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit3 className="w-5 h-5" />
+              تحرير الصورة وإضافة النصوص
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Canvas Area */}
+            <div className="lg:col-span-2 relative">
+              <div className="border rounded-lg overflow-hidden bg-muted aspect-square">
+                <canvas 
+                  ref={canvasRef}
+                  className="w-full h-full object-contain cursor-move"
+                  onMouseDown={handleCanvasMouseDown}
+                  onMouseMove={handleCanvasMouseMove}
+                  onMouseUp={handleCanvasMouseUp}
+                  onMouseLeave={handleCanvasMouseUp}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                اضغط على النص لتحديده، اسحب لتحريكه
+              </p>
+            </div>
+            
+            {/* Controls Panel */}
+            <div className="space-y-4">
+              {/* Add New Text */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Type className="w-4 h-4" />
+                    إضافة نص جديد
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Input
+                    placeholder="اكتب النص هنا..."
+                    value={newTextInput}
+                    onChange={(e) => setNewTextInput(e.target.value)}
+                    dir="auto"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs">اللون</Label>
+                      <div className="flex gap-1 mt-1">
+                        {['#ffffff', '#000000', '#ef4444', '#3b82f6', '#22c55e', '#f59e0b'].map(color => (
+                          <button
+                            key={color}
+                            className={`w-6 h-6 rounded-full border-2 ${textColor === color ? 'border-primary' : 'border-transparent'}`}
+                            style={{ backgroundColor: color }}
+                            onClick={() => setTextColor(color)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs">الحجم: {textFontSize}</Label>
+                      <Slider
+                        value={[textFontSize]}
+                        onValueChange={([v]) => setTextFontSize(v)}
+                        min={16}
+                        max={120}
+                        step={4}
+                        className="mt-2"
+                      />
+                    </div>
+                  </div>
+                  <Select value={textFontWeight} onValueChange={setTextFontWeight}>
+                    <SelectTrigger className="h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="normal">عادي</SelectItem>
+                      <SelectItem value="bold">عريض</SelectItem>
+                      <SelectItem value="800">أعرض</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button onClick={addTextToImage} className="w-full" size="sm">
+                    <Plus className="w-4 h-4 ml-2" />
+                    إضافة النص
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Edit Selected Text */}
+              {selectedTextId && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <Move className="w-4 h-4" />
+                        تعديل النص المحدد
+                      </span>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={deleteSelectedText}>
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <Input
+                      value={editorTexts.find(t => t.id === selectedTextId)?.text || ''}
+                      onChange={(e) => updateSelectedText({ text: e.target.value })}
+                      dir="auto"
+                    />
+                    <div className="flex gap-1">
+                      {['#ffffff', '#000000', '#ef4444', '#3b82f6', '#22c55e', '#f59e0b'].map(color => (
+                        <button
+                          key={color}
+                          className={`w-6 h-6 rounded-full border-2 ${editorTexts.find(t => t.id === selectedTextId)?.color === color ? 'border-primary' : 'border-transparent'}`}
+                          style={{ backgroundColor: color }}
+                          onClick={() => updateSelectedText({ color })}
+                        />
+                      ))}
+                    </div>
+                    <div>
+                      <Label className="text-xs">الحجم: {editorTexts.find(t => t.id === selectedTextId)?.fontSize}</Label>
+                      <Slider
+                        value={[editorTexts.find(t => t.id === selectedTextId)?.fontSize || 32]}
+                        onValueChange={([v]) => updateSelectedText({ fontSize: v })}
+                        min={16}
+                        max={120}
+                        step={4}
+                        className="mt-1"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Text List */}
+              {editorTexts.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">النصوص ({editorTexts.length})</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-1 max-h-[150px] overflow-y-auto">
+                      {editorTexts.map(t => (
+                        <button
+                          key={t.id}
+                          className={`w-full text-right p-2 rounded text-sm truncate transition-colors ${
+                            selectedTextId === t.id ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'
+                          }`}
+                          onClick={() => setSelectedTextId(t.id)}
+                        >
+                          {t.text}
+                        </button>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2">
+                <Button onClick={downloadEditedImage} className="flex-1">
+                  <Download className="w-4 h-4 ml-2" />
+                  تحميل الصورة
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
