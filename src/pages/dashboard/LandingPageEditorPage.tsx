@@ -67,6 +67,7 @@ import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { landingPageTemplates, LandingPage, LandingPageSection, sectionTypes } from "@/data/landingPageTemplates";
 import { LandingPageRenderer } from "@/components/landing-page/LandingPageRenderer";
+import { DraggableLandingPageRenderer } from "@/components/landing-page/editor/DraggableLandingPageRenderer";
 import { useCreateLandingPage, useUpdateLandingPage, useLandingPage } from "@/hooks/useLandingPages";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -75,6 +76,7 @@ import {
   closestCenter,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -247,11 +249,17 @@ export default function LandingPageEditorPage() {
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
   const [draggingSection, setDraggingSection] = useState<LandingPageSection | null>(null);
 
-  // Sensors for drag and drop
+  // Sensors for drag and drop - with touch support
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 200,
+        tolerance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -480,6 +488,32 @@ export default function LandingPageEditorPage() {
     ));
     setActiveSection(null);
     toast({ title: "تم الحذف", description: "تم حذف القسم" });
+  };
+
+  const handleDuplicateSection = (sectionId: string) => {
+    if (!currentPage) return;
+    const section = currentPage.sections.find(s => s.id === sectionId);
+    if (!section) return;
+
+    const newSection: LandingPageSection = {
+      ...section,
+      id: `section-${Date.now()}`,
+      title: `${section.title} (نسخة)`,
+      order: currentPage.sections.length + 1,
+    };
+
+    setPages(prev => prev.map(p => 
+      p.id === activePage 
+        ? { ...p, sections: [...p.sections, newSection] }
+        : p
+    ));
+    toast({ title: "تم النسخ", description: "تم نسخ القسم بنجاح" });
+  };
+
+  const handleSectionsReorder = (newSections: LandingPageSection[]) => {
+    setPages(prev => prev.map(p => 
+      p.id === activePage ? { ...p, sections: newSections } : p
+    ));
   };
 
   const handleMoveSection = (sectionId: string, direction: 'up' | 'down') => {
@@ -1065,7 +1099,7 @@ export default function LandingPageEditorPage() {
               style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center' }}
             >
               {currentPage ? (
-                <LandingPageRenderer 
+                <DraggableLandingPageRenderer 
                   page={currentPage} 
                   isEditing={true}
                   activeSection={activeSection}
@@ -1077,6 +1111,9 @@ export default function LandingPageEditorPage() {
                     }
                   }}
                   onContentChange={updateSectionContent}
+                  onSectionsReorder={handleSectionsReorder}
+                  onSectionDelete={handleDeleteSection}
+                  onSectionDuplicate={handleDuplicateSection}
                 />
               ) : (
                 <div className="p-12 text-center text-muted-foreground">
