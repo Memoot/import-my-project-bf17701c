@@ -1,4 +1,4 @@
-import { LandingPageSection, LandingPage } from "@/data/landingPageTemplates";
+import { LandingPageSection, LandingPage, sectionTypes } from "@/data/landingPageTemplates";
 import { DraggableSectionRenderer } from "./DraggableSectionRenderer";
 import {
   DndContext,
@@ -19,10 +19,19 @@ import {
   verticalListSortingStrategy,
   arrayMove,
 } from "@dnd-kit/sortable";
-import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Layout, GripVertical } from "lucide-react";
+import { Layout, GripVertical, Plus, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface DraggableLandingPageRendererProps {
   page: LandingPage;
@@ -33,7 +42,28 @@ interface DraggableLandingPageRendererProps {
   onSectionsReorder?: (sections: LandingPageSection[]) => void;
   onSectionDelete?: (sectionId: string) => void;
   onSectionDuplicate?: (sectionId: string) => void;
+  onAddSection?: (type: LandingPageSection['type']) => void;
 }
+
+// أيقونات الأقسام
+const getSectionIcon = (type: string) => {
+  const icons: Record<string, string> = {
+    hero: '🏠',
+    features: '⭐',
+    testimonials: '💬',
+    pricing: '💰',
+    faq: '❓',
+    cta: '🖱️',
+    bonus: '🎁',
+    about: '👥',
+    gallery: '🖼️',
+    contact: '✉️',
+    countdown: '⏰',
+    video: '▶️',
+    blog: '📝',
+  };
+  return icons[type] || '📄';
+};
 
 export function DraggableLandingPageRenderer({ 
   page, 
@@ -44,8 +74,10 @@ export function DraggableLandingPageRenderer({
   onSectionsReorder,
   onSectionDelete,
   onSectionDuplicate,
+  onAddSection,
 }: DraggableLandingPageRendererProps) {
   const [draggingSection, setDraggingSection] = useState<LandingPageSection | null>(null);
+  const [showAddSectionSheet, setShowAddSectionSheet] = useState(false);
 
   // Configure sensors for both mouse and touch
   const sensors = useSensors(
@@ -56,7 +88,7 @@ export function DraggableLandingPageRenderer({
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 200,
+        delay: 150,
         tolerance: 8,
       },
     }),
@@ -102,20 +134,32 @@ export function DraggableLandingPageRenderer({
     onSectionsReorder?.(newSections);
   };
 
+  const handleAddSectionFromSheet = (type: LandingPageSection['type']) => {
+    onAddSection?.(type);
+    setShowAddSectionSheet(false);
+  };
+
   if (!isEditing) {
     // Non-editing mode - simple render without drag
     return (
       <div className="font-cairo" dir={page.settings.direction}>
-        {sortedSections.map(section => {
-          const sectionProps = {
-            content: section.content,
-            settings: page.settings,
-            title: section.title,
-            isEditing: false,
-            onContentChange: () => {},
-          };
-          return <div key={section.id}>{/* Render section normally */}</div>;
-        })}
+        {sortedSections.map(section => (
+          <DraggableSectionRenderer
+            key={section.id}
+            section={section}
+            page={page}
+            isActive={false}
+            isEditing={false}
+            onSelect={() => {}}
+            onDelete={() => {}}
+            onDuplicate={() => {}}
+            onMoveUp={() => {}}
+            onMoveDown={() => {}}
+            onContentChange={() => {}}
+            isFirst={true}
+            isLast={true}
+          />
+        ))}
         
         <footer 
           className="py-6 px-6 text-center text-white text-sm"
@@ -128,7 +172,7 @@ export function DraggableLandingPageRenderer({
   }
 
   return (
-    <div className="font-cairo" dir={page.settings.direction}>
+    <div className="font-cairo relative" dir={page.settings.direction}>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -184,7 +228,11 @@ export function DraggableLandingPageRenderer({
           <div className="text-center text-muted-foreground">
             <Layout className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p className="font-medium">لا توجد أقسام</p>
-            <p className="text-sm">أضف أقسام من اللوحة الجانبية</p>
+            <p className="text-sm mb-4">أضف أقسام لبناء صفحتك</p>
+            <Button onClick={() => setShowAddSectionSheet(true)}>
+              <Plus className="w-4 h-4 ml-2" />
+              إضافة قسم
+            </Button>
           </div>
         </div>
       )}
@@ -196,6 +244,40 @@ export function DraggableLandingPageRenderer({
       >
         <p>جميع الحقوق محفوظة © {new Date().getFullYear()}</p>
       </footer>
+
+      {/* Floating Add Section Button */}
+      {isEditing && onAddSection && (
+        <Sheet open={showAddSectionSheet} onOpenChange={setShowAddSectionSheet}>
+          <SheetTrigger asChild>
+            <Button
+              className="fixed bottom-6 left-6 z-50 rounded-full w-14 h-14 shadow-lg bg-primary hover:bg-primary/90"
+              size="icon"
+            >
+              <Plus className="w-6 h-6" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="h-[70vh] rounded-t-3xl">
+            <SheetHeader className="pb-4">
+              <SheetTitle className="text-center">إضافة قسم جديد</SheetTitle>
+            </SheetHeader>
+            <ScrollArea className="h-full pb-8">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 p-4">
+                {sectionTypes.map((section) => (
+                  <Button
+                    key={section.type}
+                    variant="outline"
+                    className="h-auto py-4 flex flex-col gap-2 hover:border-primary hover:bg-primary/5"
+                    onClick={() => handleAddSectionFromSheet(section.type as LandingPageSection['type'])}
+                  >
+                    <span className="text-2xl">{getSectionIcon(section.type)}</span>
+                    <span className="text-sm font-medium">{section.label}</span>
+                  </Button>
+                ))}
+              </div>
+            </ScrollArea>
+          </SheetContent>
+        </Sheet>
+      )}
     </div>
   );
 }
