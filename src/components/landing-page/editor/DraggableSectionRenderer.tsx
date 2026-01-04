@@ -132,13 +132,16 @@ export function DraggableSectionRenderer({
         )}>
           {/* Drag Handle - Large touch target */}
           <button
+            type="button"
             className="cursor-grab active:cursor-grabbing p-2 hover:bg-muted rounded touch-none"
             style={{ touchAction: 'none' }}
-            onPointerDownCapture={(e) => {
-              // Stop page scroll/text selection from hijacking the drag gesture on mobile
+            onPointerDown={(e) => {
+              // Prevent text selection/scroll from hijacking the gesture on mobile
+              e.preventDefault();
               e.stopPropagation();
             }}
-            onTouchStartCapture={(e) => {
+            onTouchStart={(e) => {
+              e.preventDefault();
               e.stopPropagation();
             }}
             {...attributes}
