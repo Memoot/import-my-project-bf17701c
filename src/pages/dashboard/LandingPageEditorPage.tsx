@@ -75,7 +75,6 @@ import {
   DndContext,
   closestCenter,
   KeyboardSensor,
-  PointerSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -186,6 +185,10 @@ function SortableSectionItem({
       <button
         className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded touch-none"
         style={{ touchAction: 'none' }}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
         {...attributes}
         {...listeners}
       >
@@ -249,13 +252,8 @@ export default function LandingPageEditorPage() {
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
   const [draggingSection, setDraggingSection] = useState<LandingPageSection | null>(null);
 
-  // Sensors for drag and drop (PointerSensor works for mouse + modern touch)
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 4,
-      },
-    }),
+  // Sensors for sidebar drag & drop (Keyboard only) to avoid conflicting pointer listeners on mobile preview
+  const sidebarSensors = useSensors(
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -835,7 +833,7 @@ export default function LandingPageEditorPage() {
                 </div>
               ) : (
                 <DndContext
-                  sensors={sensors}
+                  sensors={sidebarSensors}
                   collisionDetection={closestCenter}
                   onDragStart={handleSectionDragStart}
                   onDragEnd={handleSectionDragEnd}

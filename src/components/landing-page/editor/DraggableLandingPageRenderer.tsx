@@ -78,11 +78,13 @@ export function DraggableLandingPageRenderer({
   const [draggingSection, setDraggingSection] = useState<LandingPageSection | null>(null);
   const [showAddSectionSheet, setShowAddSectionSheet] = useState(false);
 
-  // Configure sensors (PointerSensor works for mouse + modern touch; avoids TouchSensor conflicts)
+  // Configure sensors (PointerSensor works for mouse + modern touch)
+  // On mobile we prefer a short press-and-hold to start dragging to avoid scroll conflicts.
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 4,
+        delay: 150,
+        tolerance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
