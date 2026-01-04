@@ -1096,7 +1096,8 @@ export default function LandingPageEditorPage() {
                 deviceWidths[previewDevice],
                 previewDevice !== 'desktop' && 'max-h-full'
               )}
-              style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center' }}
+              // NOTE: Using CSS `zoom` avoids breaking @dnd-kit drag coords (transform: scale causes issues)
+              style={{ zoom: zoom / 100 } as any}
             >
               {currentPage ? (
                 <DraggableLandingPageRenderer 
