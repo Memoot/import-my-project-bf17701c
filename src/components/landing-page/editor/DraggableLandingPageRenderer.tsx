@@ -5,7 +5,6 @@ import {
   closestCenter,
   KeyboardSensor,
   PointerSensor,
-  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -79,17 +78,11 @@ export function DraggableLandingPageRenderer({
   const [draggingSection, setDraggingSection] = useState<LandingPageSection | null>(null);
   const [showAddSectionSheet, setShowAddSectionSheet] = useState(false);
 
-  // Configure sensors for both mouse and touch
+  // Configure sensors (PointerSensor works for mouse + modern touch; avoids TouchSensor conflicts)
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 150,
-        tolerance: 8,
+        distance: 4,
       },
     }),
     useSensor(KeyboardSensor, {
