@@ -35,7 +35,7 @@ export function useSearchProfileByEmail(email: string) {
   return useQuery({
     queryKey: ["profile-search", email],
     queryFn: async () => {
-      if (!email.trim()) return null;
+      if (!email.trim()) return [];
       
       const sanitizedEmail = escapeSqlWildcards(email.trim());
       
@@ -49,5 +49,20 @@ export function useSearchProfileByEmail(email: string) {
       return data as Profile[];
     },
     enabled: email.trim().length > 2,
+  });
+}
+
+export function useAllProfiles() {
+  return useQuery({
+    queryKey: ["all-profiles"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data as Profile[];
+    },
   });
 }

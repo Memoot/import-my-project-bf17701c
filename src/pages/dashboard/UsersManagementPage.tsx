@@ -51,10 +51,12 @@ import {
   Trash2, 
   Loader2,
   Crown,
-  User
+  User,
+  CreditCard
 } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { useSubscriptionPlans, useAllSubscriptions, useManageSubscriptions } from "@/hooks/useSubscription";
 
 interface UserProfile {
   id: string;
@@ -73,8 +75,15 @@ export default function UsersManagementPage() {
   const [newUserDisplayName, setNewUserDisplayName] = useState("");
   const [newUserRole, setNewUserRole] = useState<"admin" | "user">("user");
   const [isCreating, setIsCreating] = useState(false);
-
+  const [isChangePlanOpen, setIsChangePlanOpen] = useState(false);
+  const [selectedUserForPlan, setSelectedUserForPlan] = useState<string | null>(null);
+  const [selectedPlanId, setSelectedPlanId] = useState<string>("");
   const queryClient = useQueryClient();
+  
+  // Fetch subscription data
+  const { data: plans = [] } = useSubscriptionPlans();
+  const { data: subscriptions = [] } = useAllSubscriptions();
+  const { assignPlan } = useManageSubscriptions();
 
   // Fetch all users with their roles
   const { data: users, isLoading } = useQuery({
@@ -107,6 +116,25 @@ export default function UsersManagementPage() {
       return usersWithRoles;
     },
   });
+  
+  // Get user subscription helper
+  const getUserSubscription = (userId: string) => {
+    return subscriptions.find((s) => s.user_id === userId);
+  };
+  
+  const handleChangePlan = () => {
+    if (!selectedUserForPlan || !selectedPlanId) return;
+    assignPlan.mutate(
+      { userId: selectedUserForPlan, planId: selectedPlanId },
+      {
+        onSuccess: () => {
+          setIsChangePlanOpen(false);
+          setSelectedUserForPlan(null);
+          setSelectedPlanId("");
+        },
+      }
+    );
+  };
 
   // Create new user mutation
   const createUserMutation = useMutation({
@@ -456,6 +484,7 @@ export default function UsersManagementPage() {
                           <TableHead className="text-right">المستخدم</TableHead>
                           <TableHead className="text-right">البريد الإلكتروني</TableHead>
                           <TableHead className="text-right">الصلاحية</TableHead>
+                          <TableHead className="text-right">الخطة</TableHead>
                           <TableHead className="text-right">تاريخ التسجيل</TableHead>
                           <TableHead className="text-right">الإجراءات</TableHead>
                         </TableRow>
@@ -507,7 +536,27 @@ export default function UsersManagementPage() {
                                     </Badge>
                                   </SelectItem>
                                 </SelectContent>
-                              </Select>
+                            </Select>
+                            </TableCell>
+                            <TableCell>
+                              {(() => {
+                                const sub = getUserSubscription(user.user_id);
+                                return (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-1"
+                                    onClick={() => {
+                                      setSelectedUserForPlan(user.user_id);
+                                      setSelectedPlanId(sub?.plan_id || "");
+                                      setIsChangePlanOpen(true);
+                                    }}
+                                  >
+                                    <CreditCard className="w-3 h-3" />
+                                    {sub?.plan?.name || "بدون خطة"}
+                                  </Button>
+                                );
+                              })()}
                             </TableCell>
                             <TableCell>
                               {format(new Date(user.created_at), "dd MMMM yyyy", {
@@ -548,6 +597,50 @@ export default function UsersManagementPage() {
                 )}
               </CardContent>
             </Card>
+            
+            {/* Change Plan Dialog */}
+            <Dialog open={isChangePlanOpen} onOpenChange={setIsChangePlanOpen}>
+              <DialogContent dir="rtl">
+                <DialogHeader>
+                  <DialogTitle>تغيير خطة الاشتراك</DialogTitle>
+                  <DialogDescription>
+                    اختر الخطة الجديدة للمستخدم
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                  <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="اختر خطة" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {plans.map((plan) => (
+                        <SelectItem key={plan.id} value={plan.id}>
+                          <div className="flex items-center gap-2">
+                            <Crown className="w-4 h-4" />
+                            <span>{plan.name}</span>
+                            <span className="text-muted-foreground">
+                              ({plan.price} {plan.currency})
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsChangePlanOpen(false)}>
+                    إلغاء
+                  </Button>
+                  <Button
+                    onClick={handleChangePlan}
+                    disabled={!selectedPlanId || assignPlan.isPending}
+                  >
+                    {assignPlan.isPending && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
+                    حفظ التغييرات
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </main>
       </div>
