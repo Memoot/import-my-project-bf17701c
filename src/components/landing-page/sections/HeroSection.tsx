@@ -1,5 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { EditableText } from "../editor/EditableText";
+import { EditableButton } from "../editor/EditableButton";
 
 interface HeroSectionProps {
   content: {
@@ -109,6 +111,7 @@ export function HeroSection({ content, settings, isEditing, onContentChange }: H
   };
 
   const styles = getStyleClasses();
+  const textAlign = layout === 'left' ? 'right' : layout === 'right' ? 'left' : 'center';
   
   return (
     <section 
@@ -157,59 +160,50 @@ export function HeroSection({ content, settings, isEditing, onContentChange }: H
       
       <div className={cn("max-w-4xl mx-auto flex flex-col gap-6 relative z-10", getLayoutClasses())}>
         {content.badge && (
-          <span 
+          <EditableText
+            value={content.badge}
+            onChange={(value) => onContentChange?.('badge', value)}
+            isEditing={!!isEditing}
+            as="span"
             className={cn(
               "inline-block px-5 py-2 rounded-full text-sm font-medium backdrop-blur-sm",
               style === 'elegant' ? 'border border-white/40 tracking-widest uppercase text-xs' : 'bg-white/20'
             )}
-          >
-            ✨ {content.badge}
-          </span>
+            placeholder="✨ شارة"
+          />
         )}
         
-        {isEditing ? (
-          <input
-            type="text"
-            value={content.headline || ''}
-            onChange={(e) => onContentChange?.('headline', e.target.value)}
-            className={cn(
-              "w-full bg-transparent text-center border-b-2 border-white/50 focus:outline-none focus:border-white pb-2",
-              styles.headline
-            )}
-            placeholder="أدخل العنوان الرئيسي..."
-            style={{ textAlign: layout === 'left' ? 'right' : layout === 'right' ? 'left' : 'center' }}
-          />
-        ) : (
-          <h1 className={cn(styles.headline, "drop-shadow-lg leading-tight")}>
-            {content.headline || 'عنوان رئيسي جذاب'}
-          </h1>
-        )}
+        <EditableText
+          value={content.headline || ''}
+          onChange={(value) => onContentChange?.('headline', value)}
+          isEditing={!!isEditing}
+          as="h1"
+          className={cn(styles.headline, "drop-shadow-lg leading-tight")}
+          style={{ textAlign }}
+          placeholder="أدخل العنوان الرئيسي..."
+        />
         
-        {isEditing ? (
-          <textarea
-            value={content.subheadline || ''}
-            onChange={(e) => onContentChange?.('subheadline', e.target.value)}
-            className={cn(
-              "w-full bg-transparent text-center border-b-2 border-white/50 focus:outline-none focus:border-white resize-none max-w-2xl mx-auto pb-2",
-              styles.subheadline
-            )}
-            placeholder="أدخل الوصف الفرعي..."
-            rows={2}
-            style={{ textAlign: layout === 'left' ? 'right' : layout === 'right' ? 'left' : 'center' }}
-          />
-        ) : (
-          <p className={cn(styles.subheadline, "max-w-2xl drop-shadow-md", layout === 'center' && 'mx-auto')}>
-            {content.subheadline || 'وصف مختصر ومقنع للمنتج أو الخدمة'}
-          </p>
-        )}
+        <EditableText
+          value={content.subheadline || ''}
+          onChange={(value) => onContentChange?.('subheadline', value)}
+          isEditing={!!isEditing}
+          as="p"
+          className={cn(styles.subheadline, "max-w-2xl drop-shadow-md", layout === 'center' && 'mx-auto')}
+          style={{ textAlign }}
+          placeholder="أدخل الوصف الفرعي..."
+          multiline
+        />
         
         <div className={cn("mt-4", layout === 'center' && 'mx-auto')}>
-          <Button 
+          <EditableButton
+            text={content.buttonText || 'ابدأ الآن'}
+            url={content.buttonUrl}
+            onTextChange={(value) => onContentChange?.('buttonText', value)}
+            onUrlChange={(value) => onContentChange?.('buttonUrl', value)}
+            isEditing={!!isEditing}
             className={cn(styles.button, "text-white border-0")}
             style={{ backgroundColor: settings.secondaryColor }}
-          >
-            {content.buttonText || 'ابدأ الآن'}
-          </Button>
+          />
         </div>
       </div>
     </section>

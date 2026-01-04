@@ -69,7 +69,7 @@ export function DraggableSectionRenderer({
     content: section.content,
     settings,
     title: section.title,
-    isEditing: isActive && isEditing,
+    isEditing: isEditing, // Always pass isEditing to enable inline editing
     onContentChange,
   };
 
