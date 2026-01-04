@@ -1114,6 +1114,7 @@ export default function LandingPageEditorPage() {
                   onSectionsReorder={handleSectionsReorder}
                   onSectionDelete={handleDeleteSection}
                   onSectionDuplicate={handleDuplicateSection}
+                  onAddSection={handleAddSection}
                 />
               ) : (
                 <div className="p-12 text-center text-muted-foreground">
