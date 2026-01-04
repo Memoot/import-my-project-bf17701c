@@ -75,11 +75,13 @@ import {
   DndContext,
   closestCenter,
   KeyboardSensor,
+  PointerSensor,
   useSensor,
   useSensors,
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
+  useDroppable,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -258,6 +260,19 @@ export default function LandingPageEditorPage() {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  // Sensors for adding NEW elements (from the ElementsPanel) onto the canvas
+  const elementDnDSensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 4 },
+    })
+  );
+
+  const [draggingNewElementType, setDraggingNewElementType] = useState<string | null>(null);
+
+  const { setNodeRef: setCanvasDropRef } = useDroppable({
+    id: "landing-canvas-drop",
+  });
 
   // استخدام hook العناصر
   const {
@@ -655,6 +670,26 @@ export default function LandingPageEditorPage() {
     }
   };
 
+  // Add-new-element drag handlers (ElementsPanel -> Canvas)
+  const handleElementDragStart = (event: DragStartEvent) => {
+    const data = event.active.data.current as any;
+    if (data?.type === "new-element" && typeof data.elementType === "string") {
+      setDraggingNewElementType(data.elementType);
+    }
+  };
+
+  const handleElementDragEnd = (event: DragEndEvent) => {
+    const { over, active } = event;
+    const data = active.data.current as any;
+
+    if (data?.type === "new-element" && over?.id === "landing-canvas-drop") {
+      addElement(data.elementType);
+      toast({ title: "تمت الإضافة", description: "تم إضافة العنصر" });
+    }
+
+    setDraggingNewElementType(null);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -946,8 +981,14 @@ export default function LandingPageEditorPage() {
   );
 
   return (
-    <div className="min-h-screen bg-background flex w-full">
-      {/* Hide sidebar on small screens in editor */}
+    <DndContext
+      sensors={elementDnDSensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleElementDragStart}
+      onDragEnd={handleElementDragEnd}
+    >
+      <div className="min-h-screen bg-background flex w-full">
+        {/* Hide sidebar on small screens in editor */}
       <div className="hidden xl:block">
         <DashboardSidebar />
       </div>
@@ -1081,7 +1122,7 @@ export default function LandingPageEditorPage() {
           </div>
 
           {/* Center - Live Preview */}
-          <div className="flex-1 bg-muted/50 overflow-auto p-2 lg:p-4 flex justify-center">
+          <div className="flex-1 bg-muted/50 overflow-auto p-2 lg:p-4 flex justify-center" ref={setCanvasDropRef}>
             <div 
               className={cn(
                 "bg-white shadow-lg rounded-lg overflow-auto transition-all duration-300",
@@ -1124,7 +1165,17 @@ export default function LandingPageEditorPage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+
+      {/* Drag overlay for adding NEW elements */}
+      <DragOverlay>
+        {draggingNewElementType ? (
+          <div className="px-3 py-2 rounded-lg border border-primary bg-primary/10 shadow-lg text-sm">
+            {draggingNewElementType}
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 
   // Right Panel Content Component
