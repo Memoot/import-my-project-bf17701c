@@ -134,13 +134,11 @@ export function DraggableSectionRenderer({
           <button
             className="cursor-grab active:cursor-grabbing p-2 hover:bg-muted rounded touch-none"
             style={{ touchAction: 'none' }}
-            onPointerDown={(e) => {
-              // Prevent text selection/scroll from hijacking the gesture on mobile
-              e.preventDefault();
+            onPointerDownCapture={(e) => {
+              // Stop page scroll/text selection from hijacking the drag gesture on mobile
               e.stopPropagation();
             }}
-            onTouchStart={(e) => {
-              e.preventDefault();
+            onTouchStartCapture={(e) => {
               e.stopPropagation();
             }}
             {...attributes}
