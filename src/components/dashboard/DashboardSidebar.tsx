@@ -235,7 +235,7 @@ export function DashboardSidebar() {
       {/* Desktop Sidebar */}
       <aside 
         className={cn(
-          "bg-card border-l border-border h-screen sticky top-0 transition-all duration-300 flex-col hidden lg:flex shadow-xl",
+          "bg-card border-l border-border h-screen sticky top-0 transition-all duration-300 flex-col hidden lg:flex shadow-xl order-1",
           collapsed ? "w-20" : "w-72"
         )}
       >
@@ -272,9 +272,9 @@ export function DashboardSidebar() {
           className="absolute -left-3 top-8 w-6 h-6 rounded-full border border-border bg-card shadow-md hover:bg-muted z-10"
         >
           {collapsed ? (
-            <ChevronRight className="w-3 h-3" />
-          ) : (
             <ChevronLeft className="w-3 h-3" />
+          ) : (
+            <ChevronRight className="w-3 h-3" />
           )}
         </Button>
 

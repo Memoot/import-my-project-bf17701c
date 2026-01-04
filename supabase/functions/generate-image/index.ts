@@ -56,25 +56,29 @@ serve(async (req) => {
       );
     }
 
-    // Build enhanced prompt based on style
+    // Build enhanced prompt based on style - NO TEXT in images
     let enhancedPrompt = sanitizedPrompt;
+    const noTextSuffix = " IMPORTANT: Do NOT include any text, letters, words, numbers, or typography in the image. Pure visual imagery only, no text overlays.";
+    
     if (style) {
       switch (style) {
         case "professional":
-          enhancedPrompt = `Professional, high-quality, corporate style: ${sanitizedPrompt}. Ultra high resolution, clean and modern.`;
+          enhancedPrompt = `Professional, high-quality, corporate style advertising visual: ${sanitizedPrompt}. Ultra high resolution, clean and modern.${noTextSuffix}`;
           break;
         case "creative":
-          enhancedPrompt = `Creative, artistic, vibrant and colorful: ${sanitizedPrompt}. Ultra high resolution, unique and eye-catching.`;
+          enhancedPrompt = `Creative, artistic, vibrant and colorful advertising visual: ${sanitizedPrompt}. Ultra high resolution, unique and eye-catching.${noTextSuffix}`;
           break;
         case "minimal":
-          enhancedPrompt = `Minimal, clean, simple and elegant: ${sanitizedPrompt}. Ultra high resolution, white space, modern.`;
+          enhancedPrompt = `Minimal, clean, simple and elegant advertising visual: ${sanitizedPrompt}. Ultra high resolution, white space, modern.${noTextSuffix}`;
           break;
         case "realistic":
-          enhancedPrompt = `Photorealistic, highly detailed: ${sanitizedPrompt}. Ultra high resolution, 8k quality.`;
+          enhancedPrompt = `Photorealistic, highly detailed advertising visual: ${sanitizedPrompt}. Ultra high resolution, 8k quality.${noTextSuffix}`;
           break;
         default:
-          enhancedPrompt = `${sanitizedPrompt}. Ultra high resolution.`;
+          enhancedPrompt = `${sanitizedPrompt}. Ultra high resolution.${noTextSuffix}`;
       }
+    } else {
+      enhancedPrompt = `${sanitizedPrompt}. Ultra high resolution.${noTextSuffix}`;
     }
 
     console.log("Generating image with prompt:", enhancedPrompt);
